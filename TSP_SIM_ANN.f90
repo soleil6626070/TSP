@@ -1,8 +1,6 @@
 !----------------------------------------------------------!
-! PHY2073 - The Travelling Salesman Problem                !
-! Name: Aidan Walsh                                        !
-! URN: 6373906                                             !
-! Deadline: May 22nd 2017                                  !
+!             The Travelling Salesman Problem              !
+!                                                          !
 !----------------------------------------------------------!
 
 
@@ -10,7 +8,7 @@ PROGRAM TSP
  IMPLICIT NONE
  DOUBLE PRECISION :: the_sum, Lmean, Lerror, SD_sum
  DOUBLE PRECISION :: dL_sum, dLmean, dLerror, dLSD_sum
- DOUBLE PRECISION :: L, Lstep, Lini, Lnew, dL, r, rand, tempcity
+ DOUBLE PRECISION :: L, Lstep, Lini, Lnew, dL, r, custom_rand, tempcity
  DOUBLE PRECISION :: accprob, p, annealsched, Lmin_scalar, dL_max, dL_min, absdLmax
  INTEGER :: iseed, first, i, k, a, b, z, y, progress, numswap, sucswap
  INTEGER :: accprobiter
@@ -33,8 +31,8 @@ PROGRAM TSP
 
  DO i = 1,N
 
-   City(1,i) = rand(iseed,first)
-   City(2,i) = rand(iseed,first)
+   City(1,i) = custom_rand(iseed,first)
+   City(2,i) = custom_rand(iseed,first)
 
 !  WRITE(6,*)City(1,i), City(2,i)
 
@@ -94,64 +92,96 @@ sucswap = 0
 ! City = City_ini
  DO j = 1,999999_k16        !smaller do loop, to find each L
 
-   IF (z==1 .AND. j==1) THEN
-       WRITE(6,*)'l1',Lnew,L,p
-   END IF
-   IF (z==2 .AND. j==1) THEN
-       WRITE(6,*)'l2',Lnew,L,p
-   END IF
- 
    CALL RANDOM_NUMBER(r)
    a = NINT( r*N + 0.5 )  
 
    CALL RANDOM_NUMBER(r) 
-   b = NINT( r*N + 0.5 )  
+   b = NINT( r*N + 0.5 )
 
+   DO WHILE (b == a)
+      CALL RANDOM_NUMBER(r)
+      b = NINT( r*N + 0.5 )
+   END DO
 
-!--------- Swapping cities---------------------------------------------
+! new method, previously I was recalculating the entire path length;
+! which costs O(n) per iteration. 
+! But we only need to calculate the edges before and after the swapped 
+! nodes.
+! Then once we have the sum of the 4 distances prior to swapping, we 
+! can caluculate the sum of the 4 new edges after the swap and find
+! the difference.
+! 
+! This will cost O(1)
 
+! indicies of previous and next city of the two swapped cities
+! MOD to handle wrapping ie. prev of 1st city is Nth city
+a_prev = MOD(a-2 + N, N) + 1
+a_next = MOD(a, N) + 1
+b_prev = MOD(b-2 + N, N) + 1
+b_next = MOD(b, N) + 1
 
-   tempcity  = City(1,a)     ! Swap two random cities' x-coordinates.
-   City(1,a) = City(1,b)
-   City(1,b) = tempcity
+! a = sqrt( b^2 + c^2 )
+dist(i,j) = SQRT( (City(1,i)-City(1,j))**2 + (City(2,i)-City(2,j))**2 )
 
-   tempcity  = City(2,a)     ! Then swap the same cities' y's.
-   City(2,a) = City(2,b)
-   City(2,b) = tempcity
+! When a & b are not adjacent:
+IF (a_next /= b .AND. b_next /= a) THEN
+  ! four edge swaps
+  old_sum = dist(a_prev,a) + dist(a,a_next) + dist(b_prev,b) + dist(b,b_next)
+  ! swap a and b
+  new_sum = dist(a_prev,b) + dist(b,a_next) + dist(b_prev,a) + dist(a,b_next)
+ELSE
+  ! a and b are adjacent, 3 edge swaps, order matters
+  IF (a_next == b) THEN ! a before b
+    old_sum = dist(a_prev,a) + dist(a,b) + dist(b,b_next)
+    new_sum = dist(a_prev,b) + dist(b,a) + dist(a,b_next)
 
+  ELSE IF (b_next == a) THEN ! b before a
+    old_sum = dist(b_prev,b) + dist(b,a) + dist(a,a_next)
+    new_sum = dist(b_prev,a) + dist(a,b) + dist(b,a_next)
+  ELSE 
+    WRITE(*,*) "logic flaw in new path length calculation"
+  END IF
+END IF
 
-!---------Calculating new path length & whether to accept it-----------
+! Calculate new path length
+Lnew = L + (new_sum - old_sum)
 
-   Lnew = 0.0
-!   Lstep = 0.0
-     DO i = 1,(N-1)
+! difference in Length new path gives
+dL = Lnew - L
 
-       Lstep = (City(1,i)-City(1,i+1))**2.0
-       Lstep = (City(2,i)-City(2,i+1))**2.0 + Lstep
-       Lnew = Lnew + SQRT(Lstep)
+! Statistical tracking of max/min values of DL (not important to acceptance)
+IF ( dL > dL_max ) THEN
+  dL_max = dL
+ELSE IF ( dL < dL_min ) THEN
+  dL_min = dL           
+END IF  
 
-     END DO
-
-   IF (z==1 .AND. j==1) THEN
-       WRITE(6,*)'l1',Lnew,L
-   END IF
-   IF (z==2 .AND. j==1) THEN
-       WRITE(6,*)'l2',Lnew,L
-   END IF
-
-   dL = Lnew - L             ! if Lnew > Lold , accprob is >1
-   IF ( dL > dL_max ) THEN
-        dL_max = dL
-   ELSE IF ( dL < dL_min ) THEN
-        dL_min = dL           
-   END IF  
-
+! Should we accept?
 
    IF (p <= 10E-3 ) THEN     ! This IF statement gets rid of the floating
-       accprob = 0.0          ! underflow/ 
+       accprob = 0.0         ! underflow
    ELSE
        accprob = EXP(-dL/p)    ! if p < 10E-3 then accprob is 10^-65
    END IF
+
+! 
+CALL RANDOM_NUMBER(r)
+IF (accprob >= r) THEN
+  ! accept
+
+  ! swap x
+  tempcity = City(1,a)
+  City(1,a) = City(1,b)
+  City(1,b) = tempcity
+  ! swap y
+  tempcity  = City(2,a)
+  City(2,a) = City(2,b)
+  City(2,b) = tempcity
+  ! 
+  L = Lnew
+  City_savedpath = City
+  sucswap = sucswap+1
+
 
    IF (accprob <= 0.6) THEN
        annealsched = 0.99999
@@ -159,31 +189,6 @@ sucswap = 0
        annealsched = 0.9
    END IF
 
-
-   IF (z==1 .AND. j==1) THEN
-       WRITE(6,*)'l1',Lnew,L
-   END IF
-   IF (z==2 .AND. j==1) THEN
-       WRITE(6,*)'l2',Lnew,L
-   END IF
-
-
-!       accprobiter = accprobiter + 1
-!   END IF
-
-!   IF (accprobiter >= 5) THEN
-!       annealsched = 0.99999 
-!   END IF
-
-
-!   IF (accprob <= 0.6) THEN 
-         !sort this out init
-!   END IF
-
-
-   CALL RANDOM_NUMBER(r)     ! set p to biggest dL?
-
-   
 
    IF (accprob >= r) THEN !Lnew <= L .OR. 
       L = Lnew
@@ -317,7 +322,7 @@ END PROGRAM TSP
 
 
 
-DOUBLE PRECISION FUNCTION rand(iseed,first)
+DOUBLE PRECISION FUNCTION custom_rand(iseed,first)
 
 !  This function returns a pseudo-random number for each invocation.
 !  It is an f90 adaptation of an
@@ -352,9 +357,9 @@ DOUBLE PRECISION FUNCTION rand(iseed,first)
   else
     nextn=testv+modlus
   endif
-  rand = real(nextn)/real(modlus)
+  custom_rand = real(nextn)/real(modlus)
 !
-END FUNCTION rand
+END FUNCTION custom_rand
 
 
 !Terminal type set to 'qt'
