@@ -18,6 +18,12 @@ PROGRAM TSP
  INTEGER, PARAMETER :: k16 = SELECTED_INT_KIND(R=16)
  INTEGER(KIND=k16) :: j
  REAL, DIMENSION(1:sample_size) :: Lvalues, dLvalues
+ !swapping
+ INTEGER :: a_prev, a_next, b_prev, b_next, worswap, totworse
+ DOUBLE PRECISION :: old_sum, new_sum
+
+worswap = 0
+totworse = 0
 
 ! p     = 4.0 !SQRT(2.0)         !Parameter that varies with time
  first = 0           !Ideal p, length of the greatest gap between
@@ -70,8 +76,8 @@ DO z=1, sample_size           !big do loop
 p  = 100*N        !8.0 ! SQRT(2.0)
 numswap = 0
 sucswap = 0
- dL_max = 0.0
- dL_min = 0.0
+dL_max = 0.0
+dL_min = 0.0
 !accprobiter = 0
 
 
@@ -88,7 +94,7 @@ sucswap = 0
 
 !----------Generates two random #s between 1 & N-----------------------
 
- L = 0.0 !remember this was added
+L = 0.0 !remember this was added
 ! City = City_ini
  DO j = 1,999999_k16        !smaller do loop, to find each L
 
@@ -120,8 +126,9 @@ a_next = MOD(a, N) + 1
 b_prev = MOD(b-2 + N, N) + 1
 b_next = MOD(b, N) + 1
 
+! calculate distance funcmtion dist
 ! a = sqrt( b^2 + c^2 )
-dist(i,j) = SQRT( (City(1,i)-City(1,j))**2 + (City(2,i)-City(2,j))**2 )
+!dist(i,j) = SQRT( (City(1,i)-City(1,j))**2 + (City(2,i)-City(2,j))**2 )
 
 ! When a & b are not adjacent:
 IF (a_next /= b .AND. b_next /= a) THEN
@@ -143,6 +150,17 @@ ELSE
   END IF
 END IF
 
+! Calculate first path length
+IF (j == 1) THEN
+  ! on first iteration
+  L = 0.0
+  DO i = 1,(N-1)
+    L = L + dist(i,i+1)
+  END DO
+  ! add distance from last city back to first
+  L = L + dist(N,1)
+END IF
+
 ! Calculate new path length
 Lnew = L + (new_sum - old_sum)
 
@@ -156,19 +174,16 @@ ELSE IF ( dL < dL_min ) THEN
   dL_min = dL           
 END IF  
 
-! Should we accept?
-
+! acceptance probability
    IF (p <= 10E-3 ) THEN     ! This IF statement gets rid of the floating
        accprob = 0.0         ! underflow
    ELSE
        accprob = EXP(-dL/p)    ! if p < 10E-3 then accprob is 10^-65
    END IF
 
-! 
+! Should we accept?
 CALL RANDOM_NUMBER(r)
-IF (accprob >= r) THEN
-  ! accept
-
+IF (accprob >= r) THEN ! accept
   ! swap x
   tempcity = City(1,a)
   City(1,a) = City(1,b)
@@ -177,50 +192,28 @@ IF (accprob >= r) THEN
   tempcity  = City(2,a)
   City(2,a) = City(2,b)
   City(2,b) = tempcity
-  ! 
+  ! update
   L = Lnew
   City_savedpath = City
-  sucswap = sucswap+1
+  sucswap = sucswap + 1
+  IF (accprob < 1.0) worswap = worswap + 1
+ELSE 
+  ! reject- do nothing
+END IF
 
+! ---- Annealing schedule update ----
+! Count total worse swaps accepted
+IF (accprob < 1.0 ) totworse = totworse + 1
+! Adjust annealing schedule based on acceptance rate
+IF (totworse> 0 .AND. REAL(worswap)/REAL(totworse) < 0.6) THEN
+  annealsched = 0.9999
+END IF 
 
-   IF (accprob <= 0.6) THEN
-       annealsched = 0.99999
-   ELSE IF (accprob <= 0.6) THEN
-       annealsched = 0.9
-   END IF
+p = p * annealsched
 
+IF (p < 0.001) EXIT
 
-   IF (accprob >= r) THEN !Lnew <= L .OR. 
-      L = Lnew
-      City_savedpath = City
-      sucswap = sucswap+1
-   ELSE
-      City = City_savedpath
-   END IF
-
-   IF (z==1 .AND. j==1) THEN
-       WRITE(6,*)'l1',Lnew,L
-   END IF
-   IF (z==2 .AND. j==1) THEN
-       WRITE(6,*)'l2',Lnew,L
-   END IF
-
-
-   numswap = numswap+1
-
-!   WRITE(6,*)p   
-
-!   IF ( sucswap <= 10*N .OR. numswap <= 100*N) CYCLE !EXP(N*1.0) 
-        p = p*annealsched
-
-!   if(mod(j,100)==0)write(6,*)j,L,p,dL
-!write(6,*)j,L,dL,accprob,r
-
-!----------------Annealing Schedule------------------------------------
-!       p = p*annealsched
-   IF (p >= 0.001) CYCLE   !0.000001
-   IF (p <  0.001) EXIT
- END DO
+END DO
 
 !-------------------^end of swapping cities do loop-----
 
@@ -302,7 +295,13 @@ END DO
 ! WRITE(6,*)dLmean,'+-',dLerror
 ! WRITE(6,*)' '
 ! WRITE(6,*)'absolute dL ',absdLmax
+CONTAINS
 
+DOUBLE PRECISION FUNCTION dist(i, j)
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: i, j
+  dist = SQRT( (City(1,i)-City(1,j))**2 + (City(2,i)-City(2,j))**2 )
+END FUNCTION dist
 
 END PROGRAM TSP
 
@@ -310,15 +309,6 @@ END PROGRAM TSP
 !------------------------------------------------------------------------
 !get spherical coordinates
 !only change the angle, not radius
-
-
-
-
-
-
-
-
-
 
 
 
