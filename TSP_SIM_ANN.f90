@@ -211,6 +211,7 @@ END IF
 
 p = p * annealsched
 
+! Temperature based exit
 IF (p < 0.001) EXIT
 
 END DO
@@ -295,8 +296,14 @@ END DO
 ! WRITE(6,*)dLmean,'+-',dLerror
 ! WRITE(6,*)' '
 ! WRITE(6,*)'absolute dL ',absdLmax
+
+!----------Internal FUnction---------
 CONTAINS
 
+! internal function so we can access all variables without passing them
+! which would make the code illegible
+
+! Good old a^2 = b^2 + c^2
 DOUBLE PRECISION FUNCTION dist(i, j)
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: i, j
