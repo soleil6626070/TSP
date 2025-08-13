@@ -1,0 +1,1 @@
+* Replaced previous path length update calculation. Previously it was a summation of the entire array of cities costing us O(n) every time we performed a city swap. This was changed to a method that only calculates the length of the previous and new edges **that have changed** in the network when the swap occurs. This effectively costs us O(1).
