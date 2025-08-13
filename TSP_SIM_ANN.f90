@@ -21,6 +21,12 @@ PROGRAM TSP
  !swapping
  INTEGER :: a_prev, a_next, b_prev, b_next, worswap, totworse
  DOUBLE PRECISION :: old_sum, new_sum
+ ! Early exit variables
+ INTEGER :: moves_attempted, moves_accepted, check_interval
+ INTEGER :: total_moves_attempted, total_moves_accepted
+ DOUBLE PRECISION :: acceptance_rate
+ LOGICAL :: system_frozen
+
 
 worswap = 0
 totworse = 0
@@ -80,6 +86,13 @@ dL_max = 0.0
 dL_min = 0.0
 !accprobiter = 0
 
+! initialise frozen system exit strategy tracking variables
+moves_attempted = 0
+moves_accepted = 0
+total_moves_attempted = 0
+total_moves_accepted = 0
+check_interval = 1000  ! Check every 1000 iterations
+system_frozen = .FALSE.
 
 
 ! IF (z == 2) THEN
@@ -172,7 +185,11 @@ IF ( dL > dL_max ) THEN
   dL_max = dL
 ELSE IF ( dL < dL_min ) THEN
   dL_min = dL           
-END IF  
+END IF
+
+! Count attempted move
+moves_attempted = moves_attempted + 1
+total_moves_attempted = total_moves_attempted + 1 
 
 ! acceptance probability
    IF (p <= 10E-3 ) THEN     ! This IF statement gets rid of the floating
@@ -180,6 +197,7 @@ END IF
    ELSE
        accprob = EXP(-dL/p)    ! if p < 10E-3 then accprob is 10^-65
    END IF
+
 
 ! Should we accept?
 CALL RANDOM_NUMBER(r)
@@ -197,6 +215,8 @@ IF (accprob >= r) THEN ! accept
   City_savedpath = City
   sucswap = sucswap + 1
   IF (accprob < 1.0) worswap = worswap + 1
+  moves_accepted = moves_accepted + 1
+  total_moves_accepted = total_moves_accepted + 1
 ELSE 
   ! reject- do nothing
 END IF
@@ -208,8 +228,24 @@ IF (accprob < 1.0 ) totworse = totworse + 1
 IF (totworse> 0 .AND. REAL(worswap)/REAL(totworse) < 0.6) THEN
   annealsched = 0.9999
 END IF 
-
 p = p * annealsched
+
+! Frozen system exit
+! Every <check_interval> iterations:
+IF (MOD(j, check_interval) == 0) THEN
+  IF (moves_attempted > 0) THEN
+    acceptance_rate = REAL(moves_accepted) / REAL(moves_attempted)
+
+    IF (acceptance_rate < 0.01) THEN
+      ! system is frozen
+      system_frozen = .TRUE.
+      EXIT
+    END if
+  END IF
+! reset for next interval
+moves_attempted = 0
+moves_accepted = 0
+END IF
 
 ! Temperature based exit
 IF (p < 0.001) EXIT
@@ -246,6 +282,23 @@ END IF
 
       CLOSE(10)
   END IF
+
+! ----------Exit reason----------
+IF (system_frozen) THEN
+  WRITE(6,*) 'Run ', z, 'exited due to frozen system.'
+  WRITE(6,*) 'Total iterations: ', j
+  WRITE(6,*) 'Acceptance rate at freezing: ', acceptance_rate
+ELSE
+  WRITE(6,*) 'Run ', z, 'exited due to temperature.'
+  WRITE(6,*) 'Total iterations: ', j
+  WRITE(6,*) 'p: ', p
+END IF
+
+! Total acceptance rate
+IF (total_moves_attempted > 0) THEN 
+  WRITE(6,*) 'Overall acceptance rate for run: ', REAL(total_moves_accepted)/REAL(total_moves_attempted)
+  WRITE(6,*) ' '
+END IF 
 
 !-----------------------------------------------------------------
 
