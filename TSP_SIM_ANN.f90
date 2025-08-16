@@ -9,7 +9,8 @@ PROGRAM TSP
  DOUBLE PRECISION :: the_sum, Lmean, Lerror, SD_sum
  DOUBLE PRECISION :: dL_sum, dLmean, dLerror, dLSD_sum
  DOUBLE PRECISION :: L, Lstep, Lini, Lnew, dL, r, custom_rand, tempcity
- DOUBLE PRECISION :: accprob, p, annealsched, Lmin_scalar, dL_max, dL_min, absdLmax
+ DOUBLE PRECISION :: p, annealsched, slow_cooling, fast_cooling
+ DOUBLE PRECISION :: accprob, Lmin_scalar, dL_max, dL_min, absdLmax
  INTEGER :: iseed, first, i, k, a, b, z, y, progress, numswap, sucswap
  INTEGER :: accprobiter
  INTEGER, PARAMETER :: N = 40   !Number of Cities
@@ -32,8 +33,9 @@ worswap = 0
 totworse = 0
 
  first = 0           !Ideal p, length of the greatest gap between
- iseed = 971739      !two cities.
- annealsched = 0.85
+ iseed = 971740      !two cities.
+ fast_cooling = 0.9
+ slow_cooling = 0.99995
  Lmin_scalar = 9999999.0
  absdLmax = 0.0
  WRITE(6,'(a,i9)')'seed value that generates this sequence is ',iseed
@@ -55,23 +57,32 @@ totworse = 0
 ! Do loop initialisations
 the_sum = 0.0
 dl_sum = 0.0
-! City = City_ini
 Lstep = 0.0
 Lini = 0.0
 
- DO i = 1,(N-1) 
+! DO i = 1,(N-1) 
 
-    Lstep = (City(1,i)-City(1,i+1))**2.0
-    Lstep = (City(2,i)-City(2,i+1))**2.0 + Lstep
-    Lini = Lini + SQRT(Lstep)
+!    Lstep = (City(1,i)-City(1,i+1))**2.0
+!    Lstep = (City(2,i)-City(2,i+1))**2.0 + Lstep
+!    Lini = Lini + SQRT(Lstep)
 
- END DO
+! END DO
+
+! Initial path length calculation
+Lini = 0.0
+DO i = 1,(N-1)
+  Lini = Lini + dist(i,i+1)
+END DO
+! add distance from last city back to first
+Lini = Lini + dist(N,1)
 
 ! Outer do loop
 DO z=1, sample_size
 ! rapid schedule
-annealsched = 0.99
-
+annealsched = fast_cooling
+! reset city order
+City = City_ini
+L = 0.0 
 p  = 500*N  ! Initially very large with fast cooling schedule
 numswap = 0
 sucswap = 0
@@ -100,8 +111,6 @@ system_frozen = .FALSE.
 
 !----------Generates two random #s between 1 & N-----------------------
 
-L = 0.0 !remember this was added
-! City = City_ini
  DO j = 1,999999_k16        !smaller do loop, to find each L
 
    CALL RANDOM_NUMBER(r)
@@ -228,7 +237,7 @@ IF (accprob < 1.0 ) totworse = totworse + 1
 ! Adjust annealing schedule based on acceptance rate
 ! Swap to slow cooling once 60% of worse solutions are being accepted.
 IF (totworse> 0 .AND. REAL(worswap)/REAL(totworse) < 0.6) THEN
-  annealsched = 0.9999
+  annealsched = slow_cooling
 END IF
 
 ! Reduce temperature
