@@ -294,7 +294,7 @@ END IF
 IF (system_frozen) THEN
   WRITE(6,*) 'Run ', z, 'exited due to frozen system.'
   WRITE(6,*) 'Total iterations: ', j
-  WRITE(6,*) 'Acceptance rate at freezing: ', acceptance_rate
+  WRITE(*,'(" Acceptance rate at freezing: ", F6.3," %")') acceptance_rate*100
 ELSE
   WRITE(6,*) 'Run ', z, 'exited due to temperature.'
   WRITE(6,*) 'Total iterations: ', j
@@ -302,10 +302,12 @@ ELSE
 END IF
 
 ! Total acceptance rate
-IF (total_moves_attempted > 0) THEN 
-  WRITE(6,*) 'Overall acceptance rate for run: ', REAL(total_moves_accepted)/REAL(total_moves_attempted)
+IF (total_moves_attempted > 0) THEN
+  WRITE(6,'("Overall acceptance rate for run: ",F6.3," %")') &
+      REAL(total_moves_accepted)/REAL(total_moves_attempted) * 100.0
   WRITE(6,*) ' '
 END IF 
+
 
 !-----------------------------------------------------------------
 
