@@ -1,6 +1,6 @@
 !----------------------------------------------------------!
 !             The Travelling Salesman Problem              !
-!                                                          !
+!        Simulated Annealing - Metropolis Algorithm        !
 !----------------------------------------------------------!
 
 
@@ -11,6 +11,7 @@ PROGRAM TSP
  DOUBLE PRECISION :: L, Lstep, Lini, Lnew, dL, r, custom_rand, tempcity
  DOUBLE PRECISION :: accprob, p, annealsched, Lmin_scalar, dL_max, dL_min, absdLmax
  INTEGER :: iseed, first, i, k, a, b, z, y, progress, numswap, sucswap
+ INTEGER :: m, same_temp_swaps
  INTEGER :: accprobiter
  INTEGER, PARAMETER :: N = 40   !Number of Cities
  REAL, DIMENSION(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
@@ -27,11 +28,9 @@ PROGRAM TSP
  DOUBLE PRECISION :: acceptance_rate
  LOGICAL :: system_frozen
 
-
-worswap = 0
-totworse = 0
-
-! p     = 4.0 !SQRT(2.0)         !Parameter that varies with time
+! Initialise Variables
+ worswap = 0
+ totworse = 0
  first = 0           !Ideal p, length of the greatest gap between
  iseed = 971739      !two cities.
  annealsched = 0.99
@@ -42,43 +41,38 @@ totworse = 0
 !-----This do-loop assigns N cities random x and y coordinates.--------
 
  DO i = 1,N
-
    City(1,i) = custom_rand(iseed,first)
    City(2,i) = custom_rand(iseed,first)
-
-!  WRITE(6,*)City(1,i), City(2,i)
-
+   !WRITE(6,*)City(1,i), City(2,i)
  END DO
 
-   City_ini = City
-
-
-! Do loop initialisations
+! Path initialisations
+City_ini = City
 the_sum = 0.0
 dl_sum = 0.0
-! City = City_ini
 Lstep = 0.0
 Lini = 0.0
 
+! Initial length calculation, O(N)
  DO i = 1,(N-1) 
-
     Lstep = (City(1,i)-City(1,i+1))**2.0
     Lstep = (City(2,i)-City(2,i+1))**2.0 + Lstep
     Lini = Lini + SQRT(Lstep)
-
  END DO
 
-! Outer do loop
+! Outer do loop, repeating the experiment multiple times.
 DO z=1, sample_size
-! rapid schedule
-annealsched = 0.99
 
+! Initialisations
+L = 0.0 
+annealsched = 0.99  ! rapid schedule initially
 p  = 100*N        !8.0 ! SQRT(2.0)
 numswap = 0
 sucswap = 0
 dL_max = 0.0
 dL_min = 0.0
 !accprobiter = 0
+same_temp_swaps = 1
 
 ! initialise frozen system exit strategy tracking variables
 moves_attempted = 0
@@ -88,23 +82,13 @@ total_moves_accepted = 0
 check_interval = 1000  ! Check every 1000 iterations
 system_frozen = .FALSE.
 
+ ! Inner do loop. Apply the simmulated annealing to the TSP
+ DO j = 1,999999_k16
 
-! IF (z == 2) THEN
-!  WRITE(6,*)'1',L
-! END IF
-! L = 0.0
-! L = Lini
+ ! Multiple iterations at the same temperature loop
+ DO m = 1, same_temp_swaps
 
-!IF (z >= 2) THEN                                      !mayb 1
-!    City = Lmin_array !City_savedpath !Lmin_array
-!END IF
-
-!----------Generates two random #s between 1 & N-----------------------
-
-L = 0.0 !remember this was added
-! City = City_ini
- DO j = 1,999999_k16        !smaller do loop, to find each L
-
+!Generates two random #s between 1 & N - selecting what cities to swap
    CALL RANDOM_NUMBER(r)
    a = NINT( r*N + 0.5 )  
 
@@ -222,6 +206,9 @@ ELSE
   ! reject- do nothing
 END IF
 
+! same temp swaps end do
+END DO 
+
 ! ---- Annealing schedule update ----
 
 ! Count total worse swaps accepted
@@ -229,7 +216,8 @@ IF (accprob < 1.0 ) totworse = totworse + 1
 ! Adjust annealing schedule based on acceptance rate
 ! Swap to slow cooling once 60% of worse solutions are being accepted.
 IF (totworse> 0 .AND. REAL(worswap)/REAL(totworse) < 0.6) THEN
-  annealsched = 0.9999
+  annealsched = 0.9999  ! Slow cooling schedule
+  same_temp_swaps = 100   ! Multiple swaps per temperature
 END IF
 
 ! Reduce temperature
@@ -294,7 +282,7 @@ END IF
 IF (system_frozen) THEN
   WRITE(6,*) 'Run ', z, 'exited due to frozen system.'
   WRITE(6,*) 'Total iterations: ', j
-  WRITE(6,*) 'Acceptance rate at freezing: ', acceptance_rate
+  WRITE(*,'(" Acceptance rate at freezing: ", F6.3," %")') acceptance_rate*100
 ELSE
   WRITE(6,*) 'Run ', z, 'exited due to temperature.'
   WRITE(6,*) 'Total iterations: ', j
@@ -302,8 +290,9 @@ ELSE
 END IF
 
 ! Total acceptance rate
-IF (total_moves_attempted > 0) THEN 
-  WRITE(6,*) 'Overall acceptance rate for run: ', REAL(total_moves_accepted)/REAL(total_moves_attempted)
+IF (total_moves_attempted > 0) THEN
+  WRITE(6,'("Overall acceptance rate for run: ",F6.3," %")') &
+      REAL(total_moves_accepted)/REAL(total_moves_attempted) * 100.0
   WRITE(6,*) ' '
 END IF 
 
