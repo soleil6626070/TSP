@@ -14,7 +14,7 @@ PROGRAM TSP
  INTEGER :: accprobiter
  INTEGER, PARAMETER :: N = 40   !Number of Cities
  REAL, DIMENSION(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
- INTEGER, PARAMETER :: sample_size = 100
+ INTEGER, PARAMETER :: sample_size = 10
  INTEGER, PARAMETER :: k16 = SELECTED_INT_KIND(R=16)
  INTEGER(KIND=k16) :: j
  REAL, DIMENSION(1:sample_size) :: Lvalues, dLvalues
@@ -51,21 +51,14 @@ totworse = 0
  END DO
 
    City_ini = City
-!------------------DOOOOOOOOOOOOloop--------------------------
 
 
-
-
+! Do loop initialisations
 the_sum = 0.0
 dl_sum = 0.0
-
-
-!-------This calculates the length of the path in order----------------
-
-
 ! City = City_ini
- Lstep = 0.0
- Lini = 0.0
+Lstep = 0.0
+Lini = 0.0
 
  DO i = 1,(N-1) 
 
@@ -75,9 +68,10 @@ dl_sum = 0.0
 
  END DO
 
-
-DO z=1, sample_size           !big do loop
- annealsched = 0.99 !wooooooooooooooooooo
+! Outer do loop
+DO z=1, sample_size
+! rapid schedule
+annealsched = 0.99
 
 p  = 100*N        !8.0 ! SQRT(2.0)
 numswap = 0
@@ -191,15 +185,22 @@ END IF
 moves_attempted = moves_attempted + 1
 total_moves_attempted = total_moves_attempted + 1 
 
-! acceptance probability
-   IF (p <= 10E-3 ) THEN     ! This IF statement gets rid of the floating
-       accprob = 0.0         ! underflow
+! ---------- Acceptance Criteria ----------
+! setting accprob to zero for p <= 10^-3 gets rid of the floating underflow.
+! if p < 10E-3 then accprob is 10^-65
+   IF (p <= 10E-3 ) THEN     
+       accprob = 0.0         
    ELSE
-       accprob = EXP(-dL/p)    ! if p < 10E-3 then accprob is 10^-65
+       accprob = EXP(-dL/p)    ! analogous to P(dE) = exp^(-dE / kt)
    END IF
 
-
 ! Should we accept?
+
+! if dL is -ve (shorter path) then it will always be accepted,
+! since EXP(-dL/p) will always be > 1.
+! if dL is +ve (longer path) then it will be accepted only with 
+! probability EXP(-dL/p), (ie is it greater than a randomly chosen
+! number between 0 and 1)
 CALL RANDOM_NUMBER(r)
 IF (accprob >= r) THEN ! accept
   ! swap x
@@ -222,12 +223,16 @@ ELSE
 END IF
 
 ! ---- Annealing schedule update ----
+
 ! Count total worse swaps accepted
 IF (accprob < 1.0 ) totworse = totworse + 1
 ! Adjust annealing schedule based on acceptance rate
+! Swap to slow cooling once 60% of worse solutions are being accepted.
 IF (totworse> 0 .AND. REAL(worswap)/REAL(totworse) < 0.6) THEN
   annealsched = 0.9999
-END IF 
+END IF
+
+! Reduce temperature
 p = p * annealsched
 
 ! Frozen system exit
@@ -277,8 +282,10 @@ END IF
      OPEN(10, file='CitiesPlot.txt')
 
        DO k = 1,N
-         WRITE(10,'(2f6.3)')Lmin_array(1,k), Lmin_array(2,k)
+         WRITE(10,'(2f12.6)')Lmin_array(1,k), Lmin_array(2,k)
        END DO
+       ! Add the first city for plotting
+       WRITE(10,'(2f12.6)')Lmin_array(1,1), Lmin_array(2,1)
 
       CLOSE(10)
   END IF
