@@ -31,10 +31,9 @@ PROGRAM TSP
 worswap = 0
 totworse = 0
 
-! p     = 4.0 !SQRT(2.0)         !Parameter that varies with time
  first = 0           !Ideal p, length of the greatest gap between
  iseed = 971739      !two cities.
- annealsched = 0.99
+ annealsched = 0.85
  Lmin_scalar = 9999999.0
  absdLmax = 0.0
  WRITE(6,'(a,i9)')'seed value that generates this sequence is ',iseed
@@ -73,7 +72,7 @@ DO z=1, sample_size
 ! rapid schedule
 annealsched = 0.99
 
-p  = 100*N        !8.0 ! SQRT(2.0)
+p  = 500*N  ! Initially very large with fast cooling schedule
 numswap = 0
 sucswap = 0
 dL_max = 0.0
@@ -85,7 +84,7 @@ moves_attempted = 0
 moves_accepted = 0
 total_moves_attempted = 0
 total_moves_accepted = 0
-check_interval = 1000  ! Check every 1000 iterations
+check_interval = 10000  ! Check every 1000 iterations
 system_frozen = .FALSE.
 
 
@@ -243,8 +242,8 @@ IF (MOD(j, check_interval) == 0) THEN
 
     IF (acceptance_rate < 0.01) THEN
       ! system is frozen
-      system_frozen = .TRUE.
-      EXIT
+      !system_frozen = .TRUE.
+      !EXIT
     END if
   END IF
 ! reset for next interval
