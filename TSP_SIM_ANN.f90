@@ -29,8 +29,8 @@ PROGRAM TSP
  LOGICAL :: system_frozen
 
 
- first = 0           !Ideal p, length of the greatest gap between
- iseed = 971740      !two cities.
+ first = 0
+ iseed = 971741
  fast_cooling = 0.99
  slow_cooling = 0.99999
  cooling_trigger = 0.8
@@ -41,15 +41,10 @@ PROGRAM TSP
 !-----This do-loop assigns N cities random x and y coordinates.--------
 
  DO i = 1,N
-
    City(1,i) = custom_rand(iseed,first)
    City(2,i) = custom_rand(iseed,first)
-
 !  WRITE(6,*)City(1,i), City(2,i)
-
  END DO
-
-   City_ini = City
 
 
 ! Do loop initialisations
@@ -58,20 +53,12 @@ dl_sum = 0.0
 Lstep = 0.0
 Lini = 0.0
 
-! DO i = 1,(N-1) 
-
-!    Lstep = (City(1,i)-City(1,i+1))**2.0
-!    Lstep = (City(2,i)-City(2,i+1))**2.0 + Lstep
-!    Lini = Lini + SQRT(Lstep)
-
-! END DO
-
 ! Initial path length calculation
 Lini = 0.0
 DO i = 1,(N-1)
   Lini = Lini + dist(i,i+1)
 END DO
-! add distance from last city back to first
+! add return trip home
 Lini = Lini + dist(N,1)
 
 ! Outer do loop
@@ -79,7 +66,7 @@ DO z=1, sample_size
 
 ! rapid schedule
 annealsched = fast_cooling
-! reset city order
+! reset city order 
 City = City_ini
 L = 0.0 
 p  = 1000*N  ! Initially very large with fast cooling schedule
@@ -101,16 +88,6 @@ moves_accepted = 0
 check_interval = 10000  ! Check every 1000 iterations
 system_frozen = .FALSE.
 
-
-! IF (z == 2) THEN
-!  WRITE(6,*)'1',L
-! END IF
-! L = 0.0
-! L = Lini
-
-!IF (z >= 2) THEN                                      !mayb 1
-!    City = Lmin_array !City_savedpath !Lmin_array
-!END IF
 
 !----------Generates two random #s between 1 & N-----------------------
 
@@ -146,7 +123,7 @@ b_next = MOD(b, N) + 1
 
 ! calculate distance funcmtion dist
 ! a = sqrt( b^2 + c^2 )
-!dist(i,j) = SQRT( (City(1,i)-City(1,j))**2 + (City(2,i)-City(2,j))**2 )
+! dist(i,j) = SQRT( (City(1,i)-City(1,j))**2 + (City(2,i)-City(2,j))**2 )
 
 ! When a & b are not adjacent:
 IF (a_next /= b .AND. b_next /= a) THEN
@@ -238,7 +215,7 @@ END IF
 ! Count total worse swaps accepted
 IF (accprob < 1.0 ) totworse = totworse + 1
 ! Adjust annealing schedule based on acceptance rate
-! Swap to slow cooling once 60% of worse solutions are being accepted.
+! Swap to slow cooling once 80% of worse solutions are being accepted.
 ! minimum totworse solutions added to stabalise the trigger
 IF (totworse> 100 .AND. REAL(worswap)/REAL(totworse) < cooling_trigger) THEN
   annealsched = slow_cooling
@@ -371,6 +348,7 @@ END DO
 ! WRITE(6,*)' '
 ! WRITE(6,*)'absolute dL ',absdLmax
 
+
 !----------Internal FUnction---------
 CONTAINS
 
@@ -387,11 +365,7 @@ END FUNCTION dist
 END PROGRAM TSP
 
 
-!------------------------------------------------------------------------
-!get spherical coordinates
-!only change the angle, not radius
-
-
+!----------External Function---------
 
 DOUBLE PRECISION FUNCTION custom_rand(iseed,first)
 
@@ -436,8 +410,8 @@ END FUNCTION custom_rand
 !Terminal type set to 'qt'
 !gnuplot> pl 'CitiesPlot.txt' u 2:3:1 w labels point offset character 0, character 1 tc rgb @blue@, ' ' u 2:3 w l
 
+!---------- Further Considerations ----------
 
-
-
-
-
+!get spherical coordinates
+!only change the angle, not radius
+!Ideal p, length of the greatest gap between two cities?
