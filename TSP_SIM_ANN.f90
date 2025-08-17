@@ -27,26 +27,40 @@ PROGRAM TSP
  INTEGER :: total_moves_attempted, total_moves_accepted
  DOUBLE PRECISION :: acceptance_rate
  LOGICAL :: system_frozen
+ ! Gif generation variables
+ INTEGER :: frame_counter, output_interval
+ CHARACTER(len=100) :: frame_filename
+ LOGICAL :: create_gif_data
 
-
+ ! RNG
  first = 0
  iseed = 971741
+ WRITE(6,'(a,i9)')'seed value that generates this sequence is ',iseed
+ ! annealing schedule
  fast_cooling = 0.99
  slow_cooling = 0.99999
  cooling_trigger = 0.8
+ ! stats
  Lmin_scalar = 9999999.0
  absdLmax = 0.0
- WRITE(6,'(a,i9)')'seed value that generates this sequence is ',iseed
+ ! gif creation params
+ create_gif_data = .TRUE.
+ output_interval = 500
+
+!---------- Open file for gif data ----------
+IF (create_gif_data) THEN
+  OPEN(20, file='animation_metrics.txt')
+  WRITE(20,'(A)') '# Iteration, Length, Temperature'
+END IF
 
 !-----This do-loop assigns N cities random x and y coordinates.--------
 
  DO i = 1,N
    City(1,i) = custom_rand(iseed,first)
    City(2,i) = custom_rand(iseed,first)
-
 !  WRITE(6,*)City(1,i), City(2,i)
-
  END DO
+ ! save initial config (vital)
  City_ini = City
 
 ! Do loop initialisations
@@ -63,9 +77,11 @@ END DO
 ! add return trip home
 Lini = Lini + dist(N,1)
 
-! Outer do loop
+! ---------- Outer do loop ----------
 DO z=1, sample_size
 
+! gif creation
+IF (z > 1) create_gif_data = .FALSE.
 ! rapid schedule
 annealsched = fast_cooling
 ! reset city order 
@@ -76,7 +92,6 @@ numswap = 0
 sucswap = 0
 dL_max = 0.0
 dL_min = 0.0
-!accprobiter = 0
 
 ! itialise swaps & moves trackers
 worswap = 0
@@ -147,7 +162,7 @@ ELSE
   END IF
 END IF
 
-! Calculate first path length
+! Calculate first path length + savfe initial frame
 IF (j == 1) THEN
   ! on first iteration
   L = 0.0
@@ -156,6 +171,20 @@ IF (j == 1) THEN
   END DO
   ! add distance from last city back to first
   L = L + dist(N,1)
+  
+  ! gif datafile creation + first frame
+  IF (create_gif_data) THEN
+    WRITE(frame_filename, '(A,I6.6,A)') 'frames/frame_', frame_counter, '.txt'
+    OPEN(30, file = frame_filename)
+    DO
+      WRITE(30,'(2f12.6)') City(1,k), City(2,k)
+    END DO
+    WRITE(30,'(2f12.6)') City(1,1), City(2,1)
+    CLOSE(30)
+
+    WRITE(20,'(I8,2E16.8)') 0, L, p
+    frame_counter = frame_counter + 1
+  END IF
 END IF
 
 ! Calculate new path length
@@ -212,6 +241,21 @@ ELSE
   ! reject- do nothing
 END IF
 
+! ---- write data to file for Gif ----
+IF (create_gif_data .AND. MOD(j, output_interval) == 0) THEN
+  WRITE(frame_filename, '(A,I6.6,A)') 'frames/frame_', frame_counter, '.txt'
+  OPEN(30, file=frame_filename)
+  DO k = 1,N
+    WRITE(30,'(2f12.6)') City(1,k), City(2,k)
+  END DO
+  WRITE(30,'(2f12.6)') City(1,1), City(2,1)
+  CLOSE(30)
+  
+  ! Write metrics
+  WRITE(20,'(I8,2E16.8)') j, L, p
+  frame_counter = frame_counter + 1
+END IF
+
 ! ---- Annealing schedule update ----
 
 ! Count total worse swaps accepted
@@ -249,6 +293,22 @@ IF (p < 0.001) EXIT
 END DO
 
 !-------------------^end of swapping cities do loop-----
+
+! ----- Save final frame for gif -----
+IF (create_gif_data) THEN
+  WRITE(frame_filename, '(A,I6.6,A)') 'frames/frame_', frame_counter, '.txt'
+  OPEN(30, file=frame_filename)
+  DO k = 1,N
+    WRITE(30,'(2f12.6)') City(1,k), City(2,k)
+  END DO
+  WRITE(30,'(2f12.6)') City(1,1), City(2,1)
+  CLOSE(30)
+  ! final metrics
+  WRITE(20,'(I8,2E16.8)') j, L, p
+  ! close file
+  CLOSE(20)
+  WRITE(6,*) 'Animation data saved to frames/ directory and animation_metrics.txt'
+END IF
 
  WRITE(6,*)'The L #',z,'is'
  WRITE(6,*)L
@@ -309,6 +369,7 @@ WRITE(6,*)progress,'%'
 !----------------end of z do loop -----------------------------
 
 END DO
+
 
 
 !---------------------mean and error-----------------------------------
