@@ -43,9 +43,11 @@ PROGRAM TSP
  DO i = 1,N
    City(1,i) = custom_rand(iseed,first)
    City(2,i) = custom_rand(iseed,first)
-!  WRITE(6,*)City(1,i), City(2,i)
- END DO
 
+!  WRITE(6,*)City(1,i), City(2,i)
+
+ END DO
+ City_ini = City
 
 ! Do loop initialisations
 the_sum = 0.0
