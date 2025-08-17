@@ -9,7 +9,7 @@ PROGRAM TSP
  DOUBLE PRECISION :: the_sum, Lmean, Lerror, SD_sum
  DOUBLE PRECISION :: dL_sum, dLmean, dLerror, dLSD_sum
  DOUBLE PRECISION :: L, Lstep, Lini, Lnew, dL, r, custom_rand, tempcity
- DOUBLE PRECISION :: p, annealsched, slow_cooling, fast_cooling
+ DOUBLE PRECISION :: p, annealsched, slow_cooling, fast_cooling, cooling_trigger
  DOUBLE PRECISION :: accprob, Lmin_scalar, dL_max, dL_min, absdLmax
  INTEGER :: iseed, first, i, k, a, b, z, y, progress, numswap, sucswap
  INTEGER :: accprobiter
@@ -29,13 +29,11 @@ PROGRAM TSP
  LOGICAL :: system_frozen
 
 
-worswap = 0
-totworse = 0
-
  first = 0           !Ideal p, length of the greatest gap between
  iseed = 971740      !two cities.
- fast_cooling = 0.9
- slow_cooling = 0.99995
+ fast_cooling = 0.99
+ slow_cooling = 0.99999
+ cooling_trigger = 0.8
  Lmin_scalar = 9999999.0
  absdLmax = 0.0
  WRITE(6,'(a,i9)')'seed value that generates this sequence is ',iseed
@@ -78,23 +76,28 @@ Lini = Lini + dist(N,1)
 
 ! Outer do loop
 DO z=1, sample_size
+
 ! rapid schedule
 annealsched = fast_cooling
 ! reset city order
 City = City_ini
 L = 0.0 
-p  = 500*N  ! Initially very large with fast cooling schedule
+p  = 1000*N  ! Initially very large with fast cooling schedule
 numswap = 0
 sucswap = 0
 dL_max = 0.0
 dL_min = 0.0
 !accprobiter = 0
 
-! initialise frozen system exit strategy tracking variables
-moves_attempted = 0
-moves_accepted = 0
+! itialise swaps & moves trackers
+worswap = 0
+totworse = 0
 total_moves_attempted = 0
 total_moves_accepted = 0
+
+! initialise frozen system exit strategy tracking variables
+moves_attempted = 0  
+moves_accepted = 0    
 check_interval = 10000  ! Check every 1000 iterations
 system_frozen = .FALSE.
 
@@ -236,7 +239,8 @@ END IF
 IF (accprob < 1.0 ) totworse = totworse + 1
 ! Adjust annealing schedule based on acceptance rate
 ! Swap to slow cooling once 60% of worse solutions are being accepted.
-IF (totworse> 0 .AND. REAL(worswap)/REAL(totworse) < 0.6) THEN
+! minimum totworse solutions added to stabalise the trigger
+IF (totworse> 100 .AND. REAL(worswap)/REAL(totworse) < cooling_trigger) THEN
   annealsched = slow_cooling
 END IF
 
