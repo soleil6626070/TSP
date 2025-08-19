@@ -28,9 +28,8 @@ PROGRAM TSP
  DOUBLE PRECISION :: acceptance_rate
  LOGICAL :: system_frozen
  ! Gif generation variables
- INTEGER :: frame_counter, output_interval
- CHARACTER(len=100) :: frame_filename
- LOGICAL :: create_gif_data
+ INTEGER :: output_interval
+ LOGICAL :: write_data
 
  ! RNG
  first = 0
@@ -44,13 +43,13 @@ PROGRAM TSP
  Lmin_scalar = 9999999.0
  absdLmax = 0.0
  ! gif creation params
- create_gif_data = .TRUE.
- output_interval = 500
+ write_data = .TRUE.
+ output_interval = 1000
 
 !---------- Open file for gif data ----------
-IF (create_gif_data) THEN
-  OPEN(20, file='animation_metrics.txt')
-  WRITE(20,'(A)') '# Iteration, Length, Temperature'
+IF (write_data) THEN
+  OPEN(20, file='tsp_log.txt', status='replace')
+  WRITE(20,'(A)') 'Iteration #, Length, p, Path'
 END IF
 
 !-----This do-loop assigns N cities random x and y coordinates.--------
@@ -81,7 +80,11 @@ Lini = Lini + dist(N,1)
 DO z=1, sample_size
 
 ! gif creation
-IF (z > 1) create_gif_data = .FALSE.
+  IF (z > 1 .AND. write_data) THEN
+    write_data = .FALSE.
+    CLOSE(20)
+  END IF
+
 ! rapid schedule
 annealsched = fast_cooling
 ! reset city order 
@@ -173,17 +176,12 @@ IF (j == 1) THEN
   L = L + dist(N,1)
   
   ! gif datafile creation + first frame
-  IF (create_gif_data) THEN
-    WRITE(frame_filename, '(A,I6.6,A)') 'frames/frame_', frame_counter, '.txt'
-    OPEN(30, file = frame_filename)
-    DO
-      WRITE(30,'(2f12.6)') City(1,k), City(2,k)
-    END DO
-    WRITE(30,'(2f12.6)') City(1,1), City(2,1)
-    CLOSE(30)
-
-    WRITE(20,'(I8,2E16.8)') 0, L, p
-    frame_counter = frame_counter + 1
+  IF (write_data) THEN
+   WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
+   DO i = 1, N
+      WRITE(20,'(I4)', ADVANCE='NO') City_ini  ! city order (assuming City holds indices)
+   END DO
+   WRITE(20,*) ! Empty write to advance line
   END IF
 END IF
 
@@ -242,18 +240,12 @@ ELSE
 END IF
 
 ! ---- write data to file for Gif ----
-IF (create_gif_data .AND. MOD(j, output_interval) == 0) THEN
-  WRITE(frame_filename, '(A,I6.6,A)') 'frames/frame_', frame_counter, '.txt'
-  OPEN(30, file=frame_filename)
-  DO k = 1,N
-    WRITE(30,'(2f12.6)') City(1,k), City(2,k)
-  END DO
-  WRITE(30,'(2f12.6)') City(1,1), City(2,1)
-  CLOSE(30)
-  
-  ! Write metrics
-  WRITE(20,'(I8,2E16.8)') j, L, p
-  frame_counter = frame_counter + 1
+IF (write_data .AND. MOD(j, output_interval) == 0) THEN
+   WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
+   DO i = 1, N
+      WRITE(20,'(I4)', ADVANCE='NO') City_savedpath ! city order (assuming City holds indices)
+   END DO
+   WRITE(20,*) ! Empty write to advance line
 END IF
 
 ! ---- Annealing schedule update ----
@@ -295,19 +287,12 @@ END DO
 !-------------------^end of swapping cities do loop-----
 
 ! ----- Save final frame for gif -----
-IF (create_gif_data) THEN
-  WRITE(frame_filename, '(A,I6.6,A)') 'frames/frame_', frame_counter, '.txt'
-  OPEN(30, file=frame_filename)
-  DO k = 1,N
-    WRITE(30,'(2f12.6)') City(1,k), City(2,k)
-  END DO
-  WRITE(30,'(2f12.6)') City(1,1), City(2,1)
-  CLOSE(30)
-  ! final metrics
-  WRITE(20,'(I8,2E16.8)') j, L, p
-  ! close file
-  CLOSE(20)
-  WRITE(6,*) 'Animation data saved to frames/ directory and animation_metrics.txt'
+IF (write_data) THEN
+   WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
+   DO i = 1, N
+      WRITE(20,'(I4)', ADVANCE='NO') City_savedpath
+   END DO
+   WRITE(20,*) ! Empty write to advance line
 END IF
 
  WRITE(6,*)'The L #',z,'is'

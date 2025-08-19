@@ -1,0 +1,2 @@
+Iteration #, Length, p, Path
+       1     21.644531  40000.000000  
