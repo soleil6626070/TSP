@@ -49,7 +49,7 @@ PROGRAM TSP
 !---------- Open file for gif data ----------
 IF (write_data) THEN
   OPEN(20, file='tsp_log.txt', status='replace')
-  WRITE(20,'(A)') 'Iteration #, Length, p, Path'
+  WRITE(20,'(A)') 'Iteration #, Length, p, Path (x1,y1,x2,y2,...,x1,y1)'
 END IF
 
 !-----This do-loop assigns N cities random x and y coordinates.--------
@@ -179,8 +179,9 @@ IF (j == 1) THEN
   IF (write_data) THEN
    WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
    DO i = 1, N
-      WRITE(20,'(I4)', ADVANCE='NO') City_ini  ! city order (assuming City holds indices)
+      WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_ini(1,i), City_ini(2,i)
    END DO
+   WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_ini(1,1), City_ini(2,1)
    WRITE(20,*) ! Empty write to advance line
   END IF
 END IF
@@ -243,8 +244,9 @@ END IF
 IF (write_data .AND. MOD(j, output_interval) == 0) THEN
    WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
    DO i = 1, N
-      WRITE(20,'(I4)', ADVANCE='NO') City_savedpath ! city order (assuming City holds indices)
+      WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_savedpath(1,i), City_savedpath(2,i)
    END DO
+   WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_savedpath(1,1), City_savedpath(2,1)
    WRITE(20,*) ! Empty write to advance line
 END IF
 
@@ -290,8 +292,9 @@ END DO
 IF (write_data) THEN
    WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
    DO i = 1, N
-      WRITE(20,'(I4)', ADVANCE='NO') City_savedpath
+    WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_savedpath(1,i), City_savedpath(2,i)
    END DO
+   WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_savedpath(1,1), City_savedpath(2,1)
    WRITE(20,*) ! Empty write to advance line
 END IF
 
