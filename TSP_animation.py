@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 TSP Simulated Annealing Animation Generator
-Creates an animated visualization from tsp_log.txt file
+Creates an animated visualization from tsp_log_best.txt file
 """
 
 import numpy as np
@@ -11,7 +11,7 @@ from matplotlib.gridspec import GridSpec
 from PIL import Image
 import os
 
-def parse_log_file(filename='tsp_log.txt'):
+def parse_log_file(filename='tsp_log_best.txt'):
     """Parse the TSP log file to extract iteration, length, temperature, and path data"""
     
     iterations = []
@@ -51,8 +51,8 @@ def parse_log_file(filename='tsp_log.txt'):
 def create_animation():
     """Create the animated visualization"""
     
-    print("Reading tsp_log.txt...")
-    iterations, lengths, temperatures, paths = parse_log_file('tsp_log.txt')
+    print("Reading tsp_log_best.txt...")
+    iterations, lengths, temperatures, paths = parse_log_file('tsp_log_best.txt')
     n_frames = len(iterations)
     
     print(f"Found {n_frames} data points")
@@ -162,8 +162,8 @@ def create_animation():
 def create_static_frames():
     """Alternative: Create individual PNG frames that can be assembled into GIF/video"""
     
-    print("Reading tsp_log.txt...")
-    iterations, lengths, temperatures, paths = parse_log_file('tsp_log.txt')
+    print("Reading tsp_log_best.txt...")
+    iterations, lengths, temperatures, paths = parse_log_file('tsp_log_best.txt')
     n_frames = len(iterations)
     
     # Create output directory
@@ -246,8 +246,8 @@ if __name__ == "__main__":
     print("-" * 40)
     
     # Check if log file exists
-    if not os.path.exists('tsp_log.txt'):
-        print("Error: tsp_log.txt not found!")
+    if not os.path.exists('tsp_log_best.txt'):
+        print("Error: tsp_log_best.txt not found!")
         print("Make sure the Fortran program has been run and created the log file.")
         exit(1)
     

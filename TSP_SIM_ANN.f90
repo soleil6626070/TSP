@@ -46,11 +46,6 @@ PROGRAM TSP
  write_data = .TRUE.
  output_interval = 1000
 
-!---------- Open file for gif data ----------
-IF (write_data) THEN
-  OPEN(20, file='tsp_log.txt', status='replace')
-  WRITE(20,'(A)') 'Iteration #, Length, p, Path (x1,y1,x2,y2,...,x1,y1)'
-END IF
 
 !-----This do-loop assigns N cities random x and y coordinates.--------
 
@@ -79,11 +74,11 @@ Lini = Lini + dist(N,1)
 ! ---------- Outer do loop ----------
 DO z=1, sample_size
 
-! gif creation
-  IF (z > 1 .AND. write_data) THEN
-    write_data = .FALSE.
-    CLOSE(20)
-  END IF
+!---------- Open file for gif data ----------
+IF (write_data) THEN
+  OPEN(20, file='tsp_log.txt', status='replace')
+  WRITE(20,'(A)') 'Iteration #, Length, p, Path (x1,y1,x2,y2,...,x1,y1)'
+END IF
 
 ! rapid schedule
 annealsched = fast_cooling
@@ -326,7 +321,14 @@ END IF
        ! Add the first city for plotting
        WRITE(10,'(2f12.6)')Lmin_array(1,1), Lmin_array(2,1)
 
-      CLOSE(10)
+     CLOSE(10)
+
+    IF (write_data) THEN
+      FLUSH(20)
+      ! Save best log file
+      !CALL EXECUTE_COMMAND_LINE('cp tsp_log.txt tsp_log_best.txt')    ! Linux
+      CALL EXECUTE_COMMAND_LINE('copy tsp_log.txt tsp_log_best.txt')  ! Windows
+    END IF
   END IF
 
 ! ----------Exit reason----------
@@ -353,6 +355,10 @@ END IF
 progress = (z*100)/sample_size
 WRITE(6,*)progress,'%'
 
+! Close file end of every z run
+IF (write_data) THEN
+  CLOSE(20)
+END IF
 
 !----------------end of z do loop -----------------------------
 
