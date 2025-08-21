@@ -105,7 +105,7 @@ total_moves_accepted = 0
 ! initialise frozen system exit strategy tracking variables
 moves_attempted = 0  
 moves_accepted = 0    
-check_interval = 10000  ! Check every 1000 iterations
+check_interval = 10000 
 system_frozen = .FALSE.
 
 
@@ -270,10 +270,10 @@ IF (MOD(j, check_interval) == 0) THEN
   IF (moves_attempted > 0) THEN
     acceptance_rate = REAL(moves_accepted) / REAL(moves_attempted)
 
-    IF (acceptance_rate < 0.01) THEN
+    IF (acceptance_rate < 0.0001) THEN
       ! system is frozen
-      !system_frozen = .TRUE.
-      !EXIT
+      system_frozen = .TRUE.
+      EXIT
     END if
   END IF
 ! reset for next interval

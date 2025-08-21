@@ -1,2 +1,3 @@
 # ignore mechmodel folder
 mechmodel
+.venv
