@@ -119,7 +119,7 @@ def create_animation():
         path = paths[frame]
         path_line.set_data(path[:, 0], path[:, 1])
         city_points.set_data(path[:-1, 0], path[:-1, 1])  # Don't plot the duplicate start city
-        start_point.set_data([path[0, 0]], [path[0, 1]])
+        #start_point.set_data([path[0, 0]], [path[0, 1]])   # Star to show starting point - Useless
         
         # Update title with current iteration
         ax1.set_title(f'TSP Path - Iteration {iterations[frame]}')
