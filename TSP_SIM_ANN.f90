@@ -77,7 +77,8 @@ DO z=1, sample_size
 !---------- Open file for gif data ----------
 IF (write_data) THEN
   OPEN(20, file='tsp_log.txt', status='replace')
-  WRITE(20,'(A)') 'Iteration #, Length, p, Path (x1,y1,x2,y2,...,x1,y1)'
+  !WRITE(20,'(A)') 'Iteration #, Length, p, Path (x1,y1,x2,y2,...,x1,y1)' old
+  WRITE(20,'(A,I0)') 'Iteration #, Length, p, Path (x1,y1,x2,y2,...,x1,y1), iseed: ', iseed
 END IF
 
 ! rapid schedule
