@@ -1,3 +1,6 @@
+# Script written by GPT
+
+
 #!/usr/bin/env python3
 """
 TSP Simulated Annealing Animation Generator
