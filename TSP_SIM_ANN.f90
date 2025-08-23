@@ -474,6 +474,31 @@ END FUNCTION custom_rand
 
 !---------- Further Considerations ----------
 
-!get spherical coordinates
-!only change the angle, not radius
-!Ideal p, length of the greatest gap between two cities?
+! - Neighbourhood trimming - instead of blind swaps, take two edges a-b & c-d then
+!   reconnect them as a-c & b-d This is known as 2-opt heuristic, could try 3-opt too.
+!   This would be really good because I've noticed thanks to the animation that it takes
+!   a long time for the program to get rid of simple crossed paths.
+
+! - Multiple runs in parallel
+
+! - Writing to disk during annealing (even minor debugging write statements) 
+!   impacts performance negatively
+
+! - Subroutines/functions to despahgetti-fy the code 
+
+! - <Ideal p, length of the greatest gap between two cities> - How could I 
+!   impliment this? by keeping the p to that value for a long time perhaps?
+
+! - get spherical coordinates
+! - only change the angle, not radius
+
+! - Traingle inequality?
+
+! calculate brute force solution iteration requirements and compare
+
+! - use prim's algorithm to find the 'minimum spanning tree' so that we have a lower bound 
+!   we can compare our solution too
+
+! - split into random swap - 3 opt 
+
+! - reheating
