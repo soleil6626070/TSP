@@ -488,3 +488,10 @@ END FUNCTION custom_rand
 
 ! - get spherical coordinates
 ! - only change the angle, not radius
+
+! - Traingle inequality?
+
+! calculate brute force solution iteration requirements and compare
+
+! - use prim's algorithm to find the 'minimum spanning tree' so that we have a lower bound 
+!   we can compare our solution too
