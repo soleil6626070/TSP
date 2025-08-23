@@ -21,10 +21,12 @@ def parse_log_file(filename='tsp_log_best.txt'):
     lengths = []
     temperatures = []
     paths = []
+    iseed = None
     
     with open(filename, 'r') as f:
-        # Skip header line
-        next(f)
+        # extract iseed
+        header_line = next(f).strip()
+        iseed = int(header_line.split("iseed:")[-1])
         
         for line in f:
             # Split by whitespace
@@ -49,20 +51,24 @@ def parse_log_file(filename='tsp_log_best.txt'):
             temperatures.append(temperature)
             paths.append(path)
     
-    return np.array(iterations), np.array(lengths), np.array(temperatures), paths
+    return np.array(iterations), np.array(lengths), np.array(temperatures), paths, iseed
 
 def create_animation():
     """Create the animated visualization"""
     
     print("Reading tsp_log_best.txt...")
-    iterations, lengths, temperatures, paths = parse_log_file('tsp_log_best.txt')
+    iterations, lengths, temperatures, paths, iseed = parse_log_file('tsp_log_best.txt')
     n_frames = len(iterations)
     
     print(f"Found {n_frames} data points")
     print(f"Iterations range: {iterations[0]} to {iterations[-1]}")
     print(f"Length range: {lengths.min():.2f} to {lengths.max():.2f}")
     print(f"Temperature range: {temperatures.min():.2e} to {temperatures.max():.2e}")
-    
+    if iseed is not None:
+        print(f"Random seed (iseed): {iseed}")
+    else:
+        print("Warning: Could not extract iseed from header")
+
     # Setup the figure with subplots
     fig = plt.figure(figsize=(16, 6))
     gs = GridSpec(1, 3, figure=fig, width_ratios=[1.2, 1, 1])
@@ -100,6 +106,11 @@ def create_animation():
     ax3.set_xlabel('Iteration')
     ax3.set_ylabel('Temperature (log scale)')
     ax3.grid(True, alpha=0.3)
+
+    # Add iseed text box to the figure
+    if iseed is not None:
+        fig.text(0.02, 0.02, f'iseed: {iseed}', fontsize=12, 
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgray", alpha=0.8))
     
     def init():
         """Initialize animation"""
@@ -166,7 +177,7 @@ def create_static_frames():
     """Alternative: Create individual PNG frames that can be assembled into GIF/video"""
     
     print("Reading tsp_log_best.txt...")
-    iterations, lengths, temperatures, paths = parse_log_file('tsp_log_best.txt')
+    iterations, lengths, temperatures, paths, iseed = parse_log_file('tsp_log_best.txt')
     n_frames = len(iterations)
     
     # Create output directory
@@ -215,6 +226,11 @@ def create_static_frames():
         ax3.set_ylabel('Temperature (log scale)')
         ax3.set_title(f'Temperature: {temperatures[idx]:.2e}')
         ax3.grid(True, alpha=0.3)
+
+        # Add iseed text box to the figure
+        if iseed is not None:
+            fig.text(0.02, 0.02, f'iseed: {iseed}', fontsize=12, 
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgray", alpha=0.8))
         
         plt.tight_layout()
         
