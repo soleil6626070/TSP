@@ -74,6 +74,10 @@ Lini = Lini + dist(N,1)
 ! ---------- Outer do loop ----------
 DO z=1, sample_size
 
+! Reset rng for reproducibilitiry\ ?? stroke
+iseed = iseed + 1
+first = 0 
+
 !---------- Open file for gif data ----------
 IF (write_data) THEN
   OPEN(20, file='tsp_log.txt', status='replace')
