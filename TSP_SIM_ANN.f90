@@ -13,7 +13,7 @@ PROGRAM TSP
  DOUBLE PRECISION :: accprob, Lmin_scalar, dL_max, dL_min, absdLmax
  INTEGER :: iseed, first, i, k, a, b, z, y, progress, numswap, sucswap
  INTEGER :: accprobiter
- INTEGER, PARAMETER :: N = 40   !Number of Cities
+ INTEGER, PARAMETER :: N = 80   !Number of Cities
  REAL, DIMENSION(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
  INTEGER, PARAMETER :: sample_size = 10
  INTEGER, PARAMETER :: k16 = SELECTED_INT_KIND(R=16)
@@ -111,69 +111,15 @@ system_frozen = .FALSE.
 
 !----------Generates two random #s between 1 & N-----------------------
 
- DO j = 1,999999_k16        !smaller do loop, to find each L
-
-   CALL RANDOM_NUMBER(r)
-   a = NINT( r*N + 0.5 )  
-
-   CALL RANDOM_NUMBER(r) 
-   b = NINT( r*N + 0.5 )
-
-   DO WHILE (b == a)
-      CALL RANDOM_NUMBER(r)
-      b = NINT( r*N + 0.5 )
-   END DO
-
-! new method, previously I was recalculating the entire path length;
-! which costs O(n) per iteration. 
-! But we only need to calculate the edges before and after the swapped 
-! nodes.
-! Then once we have the sum of the 4 distances prior to swapping, we 
-! can caluculate the sum of the 4 new edges after the swap and find
-! the difference.
-! 
-! This will cost O(1)
-
-! indicies of previous and next city of the two swapped cities
-! MOD to handle wrapping ie. prev of 1st city is Nth city
-a_prev = MOD(a-2 + N, N) + 1
-a_next = MOD(a, N) + 1
-b_prev = MOD(b-2 + N, N) + 1
-b_next = MOD(b, N) + 1
-
-! calculate distance funcmtion dist
-! a = sqrt( b^2 + c^2 )
-! dist(i,j) = SQRT( (City(1,i)-City(1,j))**2 + (City(2,i)-City(2,j))**2 )
-
-! When a & b are not adjacent:
-IF (a_next /= b .AND. b_next /= a) THEN
-  ! four edge swaps
-  old_sum = dist(a_prev,a) + dist(a,a_next) + dist(b_prev,b) + dist(b,b_next)
-  ! swap a and b
-  new_sum = dist(a_prev,b) + dist(b,a_next) + dist(b_prev,a) + dist(a,b_next)
-ELSE
-  ! a and b are adjacent, 3 edge swaps, order matters
-  IF (a_next == b) THEN ! a before b
-    old_sum = dist(a_prev,a) + dist(a,b) + dist(b,b_next)
-    new_sum = dist(a_prev,b) + dist(b,a) + dist(a,b_next)
-
-  ELSE IF (b_next == a) THEN ! b before a
-    old_sum = dist(b_prev,b) + dist(b,a) + dist(a,a_next)
-    new_sum = dist(b_prev,a) + dist(a,b) + dist(b,a_next)
-  ELSE 
-    WRITE(*,*) "logic flaw in new path length calculation"
-  END IF
-END IF
+DO j = 1,999999_k16        !smaller do loop, to find each L
 
 ! Calculate first path length + savfe initial frame
 IF (j == 1) THEN
-  ! on first iteration
   L = 0.0
   DO i = 1,(N-1)
     L = L + dist(i,i+1)
   END DO
-  ! add distance from last city back to first
-  L = L + dist(N,1)
+  L = L + dist(N,1) ! add distance from last city back to first
   
   ! gif datafile creation + first frame
   IF (write_data) THEN
@@ -185,6 +131,8 @@ IF (j == 1) THEN
    WRITE(20,*) ! Empty write to advance line
   END IF
 END IF
+
+CALL random_city_swap(N, a, b, old_sum, new_sum)
 
 ! Calculate new path length
 Lnew = L + (new_sum - old_sum)
@@ -423,6 +371,65 @@ DOUBLE PRECISION FUNCTION dist(i, j)
   INTEGER, INTENT(IN) :: i, j
   dist = SQRT( (City(1,i)-City(1,j))**2 + (City(2,i)-City(2,j))**2 )
 END FUNCTION dist
+
+SUBROUTINE random_city_swap(N, a, b, old_sum, new_sum)
+  IMPLICIT NONE
+  INTEGER, INTENT(in) :: N
+  INTEGER, INTENT(out) :: a, b
+  DOUBLE PRECISION, INTENT(out) :: old_sum, new_sum
+  INTEGER :: a_prev, a_next, b_prev, b_next
+
+
+  ! Pick 2 cities to swap by calling 2 differing random numbers
+  CALL RANDOM_NUMBER(r)
+  a = NINT( r*N + 0.5 )  
+
+  CALL RANDOM_NUMBER(r) 
+  b = NINT( r*N + 0.5 )
+
+  DO WHILE (b == a)
+    CALL RANDOM_NUMBER(r)
+    b = NINT( r*N + 0.5 )
+  END DO
+
+  ! Indicies of previous and next city of the two swapped cities
+  ! MOD to handle wrapping ie. prev of 1st city is Nth city
+  a_prev = MOD(a-2 + N, N) + 1
+  a_next = MOD(a, N) + 1
+  b_prev = MOD(b-2 + N, N) + 1
+  b_next = MOD(b, N) + 1
+
+  ! Calculate new path length of proposed swap
+  ! When a & b are not adjacent:
+  IF (a_next /= b .AND. b_next /= a) THEN
+    ! four edge swaps
+    old_sum = dist(a_prev,a) + dist(a,a_next) + dist(b_prev,b) + dist(b,b_next)
+    ! swap a and b
+    new_sum = dist(a_prev,b) + dist(b,a_next) + dist(b_prev,a) + dist(a,b_next)
+  ELSE
+    ! a and b are adjacent, 3 edge swaps, order matters
+    IF (a_next == b) THEN ! a before b
+      old_sum = dist(a_prev,a) + dist(a,b) + dist(b,b_next)
+      new_sum = dist(a_prev,b) + dist(b,a) + dist(a,b_next)
+
+    ELSE IF (b_next == a) THEN ! b before a
+      old_sum = dist(b_prev,b) + dist(b,a) + dist(a,a_next)
+      new_sum = dist(b_prev,a) + dist(a,b) + dist(b,a_next)
+    ELSE 
+      WRITE(*,*) "logic flaw in new path length calculation"
+    END IF
+  END IF
+END SUBROUTINE random_city_swap
+
+
+!SUBROUTINE log_data_to_file
+!  WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
+!  DO i = 1, N
+!    WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_ini(1,i), City_ini(2,i)
+!  END DO
+!  WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_ini(1,1), City_ini(2,1)
+!  WRITE(20,*) ! Empty write to advance line
+!END SUBROUTINE log_data_to_file
 
 END PROGRAM TSP
 
