@@ -13,7 +13,7 @@ PROGRAM TSP
  DOUBLE PRECISION :: accprob, Lmin_scalar, dL_max, dL_min, absdLmax
  INTEGER :: iseed, first, i, k, a, b, z, y, progress, numswap, sucswap
  INTEGER :: accprobiter
- INTEGER, PARAMETER :: N = 80   !Number of Cities
+ INTEGER, PARAMETER :: N = 40   !Number of Cities
  REAL, DIMENSION(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
  INTEGER, PARAMETER :: sample_size = 10
  INTEGER, PARAMETER :: k16 = SELECTED_INT_KIND(R=16)
@@ -29,7 +29,7 @@ PROGRAM TSP
  LOGICAL :: system_frozen
  ! Gif generation variables
  INTEGER :: output_interval
- LOGICAL :: write_data
+ LOGICAL :: metropolis_accepted, write_data
 
  ! RNG
  first = 0
@@ -145,23 +145,10 @@ moves_attempted = moves_attempted + 1
 total_moves_attempted = total_moves_attempted + 1 
 
 ! ---------- Acceptance Criteria ----------
-! setting accprob to zero for p <= 10^-3 gets rid of the floating underflow.
-! if p < 10E-3 then accprob is 10^-65
-   IF (p <= 10E-3 ) THEN     
-       accprob = 0.0         
-   ELSE
-       accprob = EXP(-dL/p)    ! analogous to P(dE) = exp^(-dE / kt)
-   END IF
 
-! Should we accept?
+CALL metropolis(dL, p, accprob, metropolis_accepted)
 
-! if dL is -ve (shorter path) then it will always be accepted,
-! since EXP(-dL/p) will always be > 1.
-! if dL is +ve (longer path) then it will be accepted only with 
-! probability EXP(-dL/p), (ie is it greater than a randomly chosen
-! number between 0 and 1)
-CALL RANDOM_NUMBER(r)
-IF (accprob >= r) THEN ! accept
+IF (metropolis_accepted) THEN
   ! swap x
   tempcity = City(1,a)
   City(1,a) = City(1,b)
@@ -342,7 +329,7 @@ END DO
 ! WRITE(6,*)'absolute dL ',absdLmax
 
 
-!----------Internal FUnction---------
+!----------Internal Functions/Subroutines---------
 CONTAINS
 
 ! internal function so we can access all variables without passing them
@@ -361,6 +348,7 @@ SUBROUTINE random_city_swap(N, a, b, old_sum, new_sum)
   INTEGER, INTENT(out) :: a, b
   DOUBLE PRECISION, INTENT(out) :: old_sum, new_sum
   INTEGER :: a_prev, a_next, b_prev, b_next
+  DOUBLE PRECISION :: r
 
   ! Pick 2 cities to swap by calling 2 differing random numbers
   CALL RANDOM_NUMBER(r)
@@ -401,13 +389,13 @@ SUBROUTINE random_city_swap(N, a, b, old_sum, new_sum)
   END IF
 END SUBROUTINE random_city_swap
 
-SUBROUTINE metropolis(L, Lnew, dL, p, City, a, b, sucswap, worswap, moves_accepted, total_moves_accepted)
+SUBROUTINE metropolis(dL, p, accprob, metropolis_accepted)
   IMPLICIT NONE
-  DOUBLE PRECISION, INTENT(inout) :: L
-  DOUBLE PRECISION, INTENT(in) :: Lnew, dL, p
-  REAL, INTENT(inout) :: City(2,*)
-  INTEGER(IK), INTENT(IN) :: a, b
-  INTEGER(IK), INTENT(INOUT) :: sucswap, worswap, moves_accepted, total_moves_accepted
+  DOUBLE PRECISION, INTENT(in) :: dL, p
+  DOUBLE PRECISION, INTENT(out) :: accprob
+  LOGICAL, INTENT(out) :: metropolis_accepted
+  DOUBLE PRECISION :: r
+
 
   IF (p <= 10E-3 ) THEN     
       accprob = 0.0           ! Adhoc to get rid of the floating underflow.
@@ -415,33 +403,16 @@ SUBROUTINE metropolis(L, Lnew, dL, p, City, a, b, sucswap, worswap, moves_accept
       accprob = EXP(-dL/p)    ! analogous to P(dE) = exp^(-dE / kt)
   END IF
 
-  CALL RANDOM_NUMBER(r)
+  CALL RANDOM_NUMBER(r)       ! random number between 0 & 1 to compare accprob to
 
-IF (accprob >= r) THEN ! accept
-  ! swap x
-  tempcity = City(1,a)
-  City(1,a) = City(1,b)
-  City(1,b) = tempcity
-  ! swap y
-  tempcity  = City(2,a)
-  City(2,a) = City(2,b)
-  City(2,b) = tempcity
-  ! update
-  L = Lnew
-  City_savedpath = City
-  sucswap = sucswap + 1
-  IF (accprob < 1.0) worswap = worswap + 1
-  moves_accepted = moves_accepted + 1
-  total_moves_accepted = total_moves_accepted + 1
-ELSE 
-  ! reject- do nothing
-END IF
+  metropolis_accepted = (accprob >= r)
 
-! Logic:
-! If dL is -ve (shorter path) then it will always be accepted.
-! If dL is +ve (longer path) then it will be accepted only with 
-! probability EXP(-dL/p), (ie is it greater than a randomly chosen
-! number between 0 and 1)
+  ! Logic:
+  ! If dL is -ve (shorter path) then it will always be accepted, since accprob > 1.
+  ! If dL is +ve (longer path) then it will be accepted only with 
+  ! probability EXP(-dL/p), (ie is it greater than a randomly chosen
+  ! number between 0 and 1)
+
 END SUBROUTINE metropolis
 
 
