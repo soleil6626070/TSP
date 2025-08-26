@@ -113,7 +113,7 @@ system_frozen = .FALSE.
 
 DO j = 1,999999_k16        !smaller do loop, to find each L
 
-! Calculate first path length + savfe initial frame
+! Calculate first path length & save initial frame
 IF (j == 1) THEN
   L = 0.0
   DO i = 1,(N-1)
@@ -129,10 +129,8 @@ END IF
 
 CALL random_city_swap(N, a, b, old_sum, new_sum)
 
-! Calculate new path length
+! Calculate new path length & difference
 Lnew = L + (new_sum - old_sum)
-
-! difference in Length new path gives
 dL = Lnew - L
 
 ! Statistical tracking of max/min values of DL (not important to acceptance)
@@ -364,7 +362,6 @@ SUBROUTINE random_city_swap(N, a, b, old_sum, new_sum)
   DOUBLE PRECISION, INTENT(out) :: old_sum, new_sum
   INTEGER :: a_prev, a_next, b_prev, b_next
 
-
   ! Pick 2 cities to swap by calling 2 differing random numbers
   CALL RANDOM_NUMBER(r)
   a = NINT( r*N + 0.5 )  
@@ -403,6 +400,49 @@ SUBROUTINE random_city_swap(N, a, b, old_sum, new_sum)
     END IF
   END IF
 END SUBROUTINE random_city_swap
+
+SUBROUTINE metropolis(L, Lnew, dL, p, City, a, b, sucswap, worswap, moves_accepted, total_moves_accepted)
+  IMPLICIT NONE
+  DOUBLE PRECISION, INTENT(inout) :: L
+  DOUBLE PRECISION, INTENT(in) :: Lnew, dL, p
+  REAL, INTENT(inout) :: City(2,*)
+  INTEGER(IK), INTENT(IN) :: a, b
+  INTEGER(IK), INTENT(INOUT) :: sucswap, worswap, moves_accepted, total_moves_accepted
+
+  IF (p <= 10E-3 ) THEN     
+      accprob = 0.0           ! Adhoc to get rid of the floating underflow.
+  ELSE
+      accprob = EXP(-dL/p)    ! analogous to P(dE) = exp^(-dE / kt)
+  END IF
+
+  CALL RANDOM_NUMBER(r)
+
+IF (accprob >= r) THEN ! accept
+  ! swap x
+  tempcity = City(1,a)
+  City(1,a) = City(1,b)
+  City(1,b) = tempcity
+  ! swap y
+  tempcity  = City(2,a)
+  City(2,a) = City(2,b)
+  City(2,b) = tempcity
+  ! update
+  L = Lnew
+  City_savedpath = City
+  sucswap = sucswap + 1
+  IF (accprob < 1.0) worswap = worswap + 1
+  moves_accepted = moves_accepted + 1
+  total_moves_accepted = total_moves_accepted + 1
+ELSE 
+  ! reject- do nothing
+END IF
+
+! Logic:
+! If dL is -ve (shorter path) then it will always be accepted.
+! If dL is +ve (longer path) then it will be accepted only with 
+! probability EXP(-dL/p), (ie is it greater than a randomly chosen
+! number between 0 and 1)
+END SUBROUTINE metropolis
 
 
 SUBROUTINE log_data_to_file(j, L, p, City)
