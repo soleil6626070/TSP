@@ -383,10 +383,8 @@ SUBROUTINE random_city_swap(N, a, b, old_sum, new_sum)
   ! Pick 2 cities to swap by calling 2 differing random numbers
   CALL RANDOM_NUMBER(r)
   a = NINT( r*N + 0.5 )  
-
   CALL RANDOM_NUMBER(r) 
   b = NINT( r*N + 0.5 )
-
   DO WHILE (b == a)
     CALL RANDOM_NUMBER(r)
     b = NINT( r*N + 0.5 )
