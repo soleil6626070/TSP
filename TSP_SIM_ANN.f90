@@ -123,12 +123,7 @@ IF (j == 1) THEN
   
   ! gif datafile creation + first frame
   IF (write_data) THEN
-   WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
-   DO i = 1, N
-      WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_ini(1,i), City_ini(2,i)
-   END DO
-   WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_ini(1,1), City_ini(2,1)
-   WRITE(20,*) ! Empty write to advance line
+    CALL log_data_to_file(j, L, p, City)
   END IF
 END IF
 
@@ -190,12 +185,7 @@ END IF
 
 ! ---- write data to file for Gif ----
 IF (write_data .AND. MOD(j, output_interval) == 0) THEN
-   WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
-   DO i = 1, N
-      WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_savedpath(1,i), City_savedpath(2,i)
-   END DO
-   WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_savedpath(1,1), City_savedpath(2,1)
-   WRITE(20,*) ! Empty write to advance line
+  CALL log_data_to_file(j, L, p, City)
 END IF
 
 ! ---- Annealing schedule update ----
@@ -238,12 +228,7 @@ END DO
 
 ! ----- Save final frame for gif -----
 IF (write_data) THEN
-   WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
-   DO i = 1, N
-    WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_savedpath(1,i), City_savedpath(2,i)
-   END DO
-   WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_savedpath(1,1), City_savedpath(2,1)
-   WRITE(20,*) ! Empty write to advance line
+  CALL log_data_to_file(j, L, p, City)
 END IF
 
  WRITE(6,*)'The L #',z,'is'
@@ -420,14 +405,20 @@ SUBROUTINE random_city_swap(N, a, b, old_sum, new_sum)
 END SUBROUTINE random_city_swap
 
 
-!SUBROUTINE log_data_to_file
-!  WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
-!  DO i = 1, N
-!    WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_ini(1,i), City_ini(2,i)
-!  END DO
-!  WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City_ini(1,1), City_ini(2,1)
-!  WRITE(20,*) ! Empty write to advance line
-!END SUBROUTINE log_data_to_file
+SUBROUTINE log_data_to_file(j, L, p, City)
+  IMPLICIT NONE
+  INTEGER(KIND=k16), INTENT(in) :: j
+  DOUBLE PRECISION, INTENT(in) :: L, p 
+  REAL, INTENT(in) :: City(2,N)
+  INTEGER :: o ! local loop index
+
+  WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') j, L, p
+  DO o = 1, N
+    WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City(1,o), City(2,o)
+  END DO
+  WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City(1,1), City(2,1)
+  WRITE(20,*) ! Empty write to advance line
+END SUBROUTINE log_data_to_file
 
 END PROGRAM TSP
 
