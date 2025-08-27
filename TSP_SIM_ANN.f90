@@ -221,11 +221,11 @@ END IF
 ! WRITE(6,*)' '
 ! WRITE(6,*)'biggest dl',dl_max
 ! WRITE(6,*)'smalest dL',dL_min
-!-------------------------ABSOULUTE----------------------------------
+!-------------------------Absolute statistics----------------------------------
 
 dL_sum = dL_sum + dL_max
 the_sum = the_sum + L
-Lvalues(z) = L              !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+Lvalues(z) = L 
 dLvalues(z) = dL_max
 IF (absdlmax < dl_max) THEN
     absdlmax = dl_max
@@ -332,9 +332,6 @@ END DO
 !----------Internal Functions/Subroutines---------
 CONTAINS
 
-! internal function so we can access all variables without passing them
-! which would make the code illegible
-
 ! Good old a^2 = b^2 + c^2
 DOUBLE PRECISION FUNCTION dist(i, j)
   IMPLICIT NONE
@@ -387,6 +384,10 @@ SUBROUTINE random_city_swap(N, a, b, old_sum, new_sum)
       WRITE(*,*) "logic flaw in new path length calculation"
     END IF
   END IF
+
+  ! Logic:
+  ! By calculating only the edges that have changed in the swap, 
+  ! we achieve O(1) path length calculation
 END SUBROUTINE random_city_swap
 
 SUBROUTINE metropolis(dL, p, accprob, metropolis_accepted)
