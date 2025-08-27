@@ -13,9 +13,9 @@ PROGRAM TSP
  DOUBLE PRECISION :: accprob, Lmin_scalar, dL_max, dL_min, absdLmax
  INTEGER :: iseed, first, i, k, a, b, z, y, progress, numswap, sucswap
  INTEGER :: accprobiter
- INTEGER, PARAMETER :: N = 40   !Number of Cities
+ INTEGER, PARAMETER :: N = 50   !Number of Cities
  REAL, DIMENSION(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
- INTEGER, PARAMETER :: sample_size = 10
+ INTEGER, PARAMETER :: sample_size = 100
  INTEGER, PARAMETER :: k16 = SELECTED_INT_KIND(R=16)
  INTEGER(KIND=k16) :: j
  REAL, DIMENSION(1:sample_size) :: Lvalues, dLvalues
@@ -71,10 +71,10 @@ END DO
 ! add return trip home
 Lini = Lini + dist(N,1)
 
-! ---------- Outer do loop ----------
+! ---------- Outer Do Loop - Repeats the program z times ----------
 DO z=1, sample_size
 
-! Reset rng for reproducibilitiry\ ?? stroke
+! Reset rng for reproducibility
 iseed = iseed + 1
 first = 0 
 
@@ -109,7 +109,7 @@ check_interval = 10000
 system_frozen = .FALSE.
 
 
-!----------Generates two random #s between 1 & N-----------------------
+!--------------- Inner Do Loop - Attempts to solve the TSP -----------------------
 
 DO j = 1,999999_k16        !smaller do loop, to find each L
 
@@ -121,17 +121,20 @@ IF (j == 1) THEN
   END DO
   L = L + dist(N,1) ! add distance from last city back to first
   
-  ! gif datafile creation + first frame
+  ! gif data collection
   IF (write_data) THEN
     CALL log_data_to_file(j, L, p, City)
   END IF
 END IF
 
-CALL random_city_swap(N, a, b, old_sum, new_sum)
 
-! Calculate new path length & difference
+! ----- Swap two cities at random & calculate the new path length -----
+CALL random_city_swap(N, a, b, old_sum, new_sum)
 Lnew = L + (new_sum - old_sum)
 dL = Lnew - L
+! Count attempted move
+moves_attempted = moves_attempted + 1
+total_moves_attempted = total_moves_attempted + 1 
 
 ! Statistical tracking of max/min values of DL (not important to acceptance)
 IF ( dL > dL_max ) THEN
@@ -140,15 +143,12 @@ ELSE IF ( dL < dL_min ) THEN
   dL_min = dL           
 END IF
 
-! Count attempted move
-moves_attempted = moves_attempted + 1
-total_moves_attempted = total_moves_attempted + 1 
-
 ! ---------- Acceptance Criteria ----------
 
+! Use the metropolis algorithm to determine whether we accept the new path
 CALL metropolis(dL, p, accprob, metropolis_accepted)
 
-IF (metropolis_accepted) THEN
+IF (metropolis_accepted) THEN ! Update values
   ! swap x
   tempcity = City(1,a)
   City(1,a) = City(1,b)
