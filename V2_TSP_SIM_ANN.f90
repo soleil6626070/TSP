@@ -44,10 +44,12 @@ Do z = 1, sample_size
         attempted_moves = 0
         better_moves = 0
         Do While (better_moves < 10*N .AND. attempted_moves < 100*N)
+            ! Choose 2 cities at random
+            CALL Select_2_Cities(a_prev, a, b, b_next)
             ! - 50/50 reverse or transport subroutine
             CALL RANDOM_NUMBER(r)
             If (r >= 0.5) Then
-                CALL Reverse()
+                CALL Reverse(a, b, N, City)
             Else
                 CALL Transport()
             End If
@@ -97,9 +99,9 @@ Subroutine Select_2_Cities(a_prev, a, b, b_next)
 
   ! Pick 2 cities to swap by calling 2 differing random numbers
   CALL RANDOM_NUMBER(r)
-  a = NINT( r*N + 0.5 ) ! say this is 30th
+  a = NINT( r*N + 0.5 )
   CALL RANDOM_NUMBER(r) 
-  b = NINT( r*N + 0.5 ) ! 4th
+  b = NINT( r*N + 0.5 ) 
   ! Indicies of previous and next city of the two swapped cities
   a_prev = MOD(a-2 + N, N) + 1  ! MOD to handle wrapping
   b_next = MOD(b, N) + 1        ! ie. prev of 1st city is Nth city
@@ -110,8 +112,36 @@ Subroutine Select_2_Cities(a_prev, a, b, b_next)
     b = NINT( r*N + 0.5 )
     b_next = MOD(b, N) + 1 
   END DO
-
 End Subroutine Select_2_Cities
+
+Subroutine Reverse(a, b, N, City)
+  Integer, Intent(In) :: a, b, N
+  Integer, Intent(InOut) :: City
+  Integer :: nodes_in_segment, half, left, right, i
+  Double Precision :: tempcity(2) 
+
+  ! number of nodes in the a -> b segment
+  nodes_in_segment = MOD(b - a + N, N) + 1  !mod(7 - 3 + 40, 40) +1 = 5
+  half = nodes_in_segment / 2
+
+  Do i = 0, half - 1
+    ! 2 pointers - same logic as palindrome check
+    left = MOD(a - 1 + iterable, N) + 1
+    right = MOD(b - 1 - iterable + N, N) + 1
+    ! swap
+    tempcity(:) = City(:,left)
+    City(:,left) = City(:,right)
+    City(:,right) = tempcity(:)
+  End Do
+
+  ! Logic:
+  ! O((b-a)/2)
+  ! 2 pointers pointing to the start and end of the array
+  ! Swap them, and then advance the iteration by one to then
+  ! point to start+1 and end-1, repeat.
+
+  ! need to add back prev_next and do distance calculation
+End Subroutine Reversed 
 
 Subroutine metropolis(dL, T, accprob, metropolis_accepted)
   Implicit None
