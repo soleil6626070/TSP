@@ -35,12 +35,14 @@ Do z = 1, sample_size
     T = 100*N 
     annealsched = 0.9
     City = City_ini
-    L = 0.0
+    L = Lini
 
-    ! Middle do loop 
+    ! Temperature do loop 
     Do While ( T > 0.0 )
 
         ! Inner do loop - 10*N better solutions or no more better sltns possible
+        attempted_moves = 0
+        better_moves = 0
         Do While (better_moves < 10*N .AND. attempted_moves < 100*N)
             ! - 50/50 reverse or transport subroutine
             CALL RANDOM_NUMBER(r)
@@ -61,17 +63,19 @@ Do z = 1, sample_size
                     better_moves = better_moves + 1
                 Else 
                     worse_moves_accepted = worse_moves_accepted + 1
+                End If
             Else 
-                City = City_prior  ! reset
-
+                City = City_savedpath  ! reset path to before the transformation
+            End If
+            attempted_moves = attempted_moves + 1
+            City_savedpath = City
         ! End inner loop
         End Do 
 
         ! Decrease temperature
         T = T * annealsched
-        !If previous pathlength = current pathlength
-        !    T = -1.0
-        !End If
+        ! If no improvements were made from previous temp, system is deemed frozen
+        If (previous_T_L <= L) T = -1.0
 
     End Do
 End Do 
@@ -80,14 +84,34 @@ End Do
 ! Internal Functions/Subroutines
 Contains
 
-! Good old a^2 = b^2 + c^2
+! Good old a^2 + b^2 = c^2
 Double Precision Function dist(i, j)
   Implicit None
   INTEGER, INTENT(IN) :: i, j
   dist = SQRT( (City(1,i)-City(1,j))**2 + (City(2,i)-City(2,j))**2 )
 END Function dist
 
-Subroutine 
+Subroutine Select_2_Cities(a_prev, a, b, b_next)
+  Double Precision :: r
+  Integer, Intent(Out) :: a_prev, a, b, b_next
+
+  ! Pick 2 cities to swap by calling 2 differing random numbers
+  CALL RANDOM_NUMBER(r)
+  a = NINT( r*N + 0.5 ) ! say this is 30th
+  CALL RANDOM_NUMBER(r) 
+  b = NINT( r*N + 0.5 ) ! 4th
+  ! Indicies of previous and next city of the two swapped cities
+  a_prev = MOD(a-2 + N, N) + 1  ! MOD to handle wrapping
+  b_next = MOD(b, N) + 1        ! ie. prev of 1st city is Nth city
+
+  ! Handle ____ cases (cant think of the word)
+  DO WHILE (b == a .OR. b == a_prev)
+    CALL RANDOM_NUMBER(r)
+    b = NINT( r*N + 0.5 )
+    b_next = MOD(b, N) + 1 
+  END DO
+
+End Subroutine Select_2_Cities
 
 Subroutine metropolis(dL, T, accprob, metropolis_accepted)
   Implicit None
