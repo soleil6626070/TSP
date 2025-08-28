@@ -9,9 +9,10 @@ PROGRAM TSP
  DOUBLE PRECISION :: the_sum, Lmean, Lerror, SD_sum
  DOUBLE PRECISION :: dL_sum, dLmean, dLerror, dLSD_sum
  DOUBLE PRECISION :: L, Lstep, Lini, Lnew, dL, r, custom_rand, tempcity
+ DOUBLE PRECISION :: previous_T_path_length
  DOUBLE PRECISION :: p, annealsched, slow_cooling, fast_cooling, cooling_trigger
  DOUBLE PRECISION :: accprob, Lmin_scalar, dL_max, dL_min, absdLmax
- INTEGER :: iseed, first, i, k, a, b, z, y, progress, numswap, sucswap
+ INTEGER :: iseed, first, i, k, a, b, z, y, progress, numswap, sucswap, z2
  INTEGER :: accprobiter
  INTEGER, PARAMETER :: N = 50   !Number of Cities
  REAL, DIMENSION(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
@@ -36,14 +37,14 @@ PROGRAM TSP
  iseed = 971741
  WRITE(6,'(a,i9)')'seed value that generates this sequence is ',iseed
  ! annealing schedule
- fast_cooling = 0.99
- slow_cooling = 0.99999
+ fast_cooling = 0.9
+ slow_cooling = 0.9
  cooling_trigger = 0.8
  ! stats
  Lmin_scalar = 9999999.0
  absdLmax = 0.0
  ! gif creation params
- write_data = .TRUE.
+ write_data = .FALSE.
  output_interval = 1000
 
 
@@ -128,6 +129,9 @@ IF (j == 1) THEN
 END IF
 
 
+DO z2 = 1, 100*N
+
+
 ! ----- Swap two cities at random & calculate the new path length -----
 CALL random_city_swap(N, a, b, old_sum, new_sum)
 Lnew = L + (new_sum - old_sum)
@@ -176,33 +180,40 @@ END IF
 ! ---- Annealing schedule update ----
 
 ! Count total worse swaps accepted
-IF (accprob < 1.0 ) totworse = totworse + 1
+!IF (accprob < 1.0 ) totworse = totworse + 1
 ! Adjust annealing schedule based on acceptance rate
 ! Swap to slow cooling once 80% of worse solutions are being accepted.
 ! minimum totworse solutions added to stabalise the trigger
-IF (totworse> 100 .AND. REAL(worswap)/REAL(totworse) < cooling_trigger) THEN
-  annealsched = slow_cooling
-END IF
+!IF (totworse> 100 .AND. REAL(worswap)/REAL(totworse) < cooling_trigger) THEN
+!  annealsched = slow_cooling
+!END IF
+
+End Do !z2
 
 ! Reduce temperature
 p = p * annealsched
 
+If (L == previous_T_path_length) THEN
+  EXIT
+END IF
+previous_T_path_length = L 
+
 ! Frozen system exit
 ! Every <check_interval> iterations:
-IF (MOD(j, check_interval) == 0) THEN
-  IF (moves_attempted > 0) THEN
-    acceptance_rate = REAL(moves_accepted) / REAL(moves_attempted)
+!IF (MOD(j, check_interval) == 0) THEN
+!  IF (moves_attempted > 0) THEN
+!    acceptance_rate = REAL(moves_accepted) / REAL(moves_attempted)
 
-    IF (acceptance_rate < 0.0001) THEN
+!    IF (acceptance_rate < 0.0001) THEN
       ! system is frozen
-      system_frozen = .TRUE.
-      EXIT
-    END if
-  END IF
+!      system_frozen = .TRUE.
+!      EXIT
+!    END if
+!  END IF
 ! reset for next interval
-moves_attempted = 0
-moves_accepted = 0
-END IF
+!moves_attempted = 0
+!moves_accepted = 0
+!END IF
 
 ! Temperature based exit
 IF (p < 0.001) EXIT
