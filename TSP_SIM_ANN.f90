@@ -90,7 +90,7 @@ annealsched = fast_cooling
 ! reset city order 
 City = City_ini
 L = 0.0 
-p  = 1000*N  ! Initially very large with fast cooling schedule
+p  = 10*N  ! Initially very large with fast cooling schedule
 numswap = 0
 sucswap = 0
 dL_max = 0.0
