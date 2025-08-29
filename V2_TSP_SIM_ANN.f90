@@ -53,7 +53,8 @@ Do z = 1, sample_size
             Else
                 CALL Transport()
             End If
-            ! - Evaluate new path length - cost evaluation [ in the subroutine ]
+            ! - Evaluate new path length - cost evaluation
+            Lnew = L + new_sum - old_sum
             dL = Lnew - L
             ! - Call metropolis acceptance evaluation
             CALL metropolis(dL, T, accprob, metropolis_accepted)
@@ -115,10 +116,16 @@ Subroutine Select_2_Cities(a_prev, a, b, b_next)
 End Subroutine Select_2_Cities
 
 Subroutine Reverse(a, b, N, City)
-  Integer, Intent(In) :: a, b, N
+  Integer, Intent(In) :: a, b, a_next, b_prev, N
   Integer, Intent(InOut) :: City
+  Double Precision, Intent(Out) :: old_sum, new_sum
   Integer :: nodes_in_segment, half, left, right, i
-  Double Precision :: tempcity(2) 
+  Double Precision :: tempcity(2)
+
+  ! length of edges before being transformed
+  old_sum = dist(a_prev, a) + dist(b, b_next)
+  ! length of edges after transformation
+  new_sum = dist(a_prev, b) + dist(a, b_next)
 
   ! number of nodes in the a -> b segment
   nodes_in_segment = MOD(b - a + N, N) + 1  !mod(7 - 3 + 40, 40) +1 = 5
