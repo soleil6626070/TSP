@@ -146,9 +146,18 @@ Subroutine Reverse(a, b, N, City)
   ! 2 pointers pointing to the start and end of the array
   ! Swap them, and then advance the iteration by one to then
   ! point to start+1 and end-1, repeat.
-
-  ! need to add back prev_next and do distance calculation
 End Subroutine Reversed 
+
+Subroutine Transport()
+  Implicit None
+  Integer, Intent(In) :: a, b, a_prev, b_next
+
+  ! Insertion point selection O(1)
+
+  ! length of edges before being transformed
+  old_sum = dist(a_prev, a) + dist(b, b_next)
+
+End Subroutine
 
 Subroutine metropolis(dL, T, accprob, metropolis_accepted)
   Implicit None
