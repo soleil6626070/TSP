@@ -143,9 +143,8 @@ Subroutine Reverse(a, b, N, City)
   Double Precision :: tempcity(2)
 
   ! Cost evaluation
-  ! length of edges before being transformed
+  ! length of edges before/after being transformed
   old_sum = dist(a_prev, a) + dist(b, b_next)
-  ! length of edges after transformation
   new_sum = dist(a_prev, b) + dist(a, b_next)
 
   ! half the number of nodes in the a -> b segment
@@ -172,23 +171,22 @@ Subroutine Transport()
   Implicit None
   Integer, Intent(In) :: a, b, a_prev, b_next
 
-  ! 
-  old_sum = 
-
-  ! Insertion point selection
+  ! Insertion point selection O(1)
   nodes_not_in_segment = N - (nodes_in_segment + 2)
-  ! random number between 1 and <nodes_not_in_segment>
+  ! random number between 0 and <nodes_not_in_segment> (inclusive)
   CALL RANDOM_NUMBER(r) 
-  c = NINT( r*nodes_not_in_segment + 0.5 )
+  c = INT( r*(nodes_not_in_segment + 1) )
   ! put that random number after b_next
-  ins_point = MOD(b_next + c, N)
+  ins_point = MOD(b_next + c, N)      ! ins_point can overlap with b_next
+  ins_next = MOD(ins_point, N) + 1    ! ins_next can overlap with a_prev
 
-  ins_prev = MOD(ins_point-2 + N, N) + 1  ! MOD to handle wrapping
-  ins_next = MOD(ins_point, N) + 1        ! ie. prev of 1st city is Nth city
+  ! Cost Evaluation
+  ! length of edges before/after being transformed
+  old_sum = dist(a_prev, a) + dist(b, b_next) + dist(ins_point, ins_next)
+  new_sum = dist(a_prev, b_next) + dist(ins_point, a) + dist(b, ins_next)
 
+  ! Update values
 
-  ! length of edges before being transformed
-  old_sum = dist(a_prev, a) + dist(b, b_next)
 
 End Subroutine
 
