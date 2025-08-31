@@ -115,20 +115,40 @@ Subroutine Select_2_Cities(a_prev, a, b, b_next)
   END DO
 End Subroutine Select_2_Cities
 
+Subroutine Select_Segment()
+  Double Precision :: r 
+  Integer, Intent(Out) :: a_prev, a, b, b_next, nodes_in_segment
+
+  ! Select segment of 3/4/5 cities ( 2/3/4 edges )
+  CALL RANDOM_NUMBER(r)
+  nodes_in_segment = NINT( r*3 + 0.5 ) + 2  ! returns 3, 4 or 5 evenly
+
+  CALL RANDOM_NUMBER(r)
+  a = NINT( r*N + 0.5 )
+
+  ! b is nodes_in_segment after a
+  b = MOD(a + nodes_in_segment, N)
+
+  ! Indicies of previous and next city of the two swapped cities
+  a_prev = MOD(a-2 + N, N) + 1
+  b_next = MOD(b, N) + 1
+
+End Subroutine
+
 Subroutine Reverse(a, b, N, City)
-  Integer, Intent(In) :: a, b, a_next, b_prev, N
+  Integer, Intent(In) :: a, b, a_next, b_prev, N, nodes_in_segment
   Integer, Intent(InOut) :: City
   Double Precision, Intent(Out) :: old_sum, new_sum
-  Integer :: nodes_in_segment, half, left, right, i
+  Integer :: half, left, right, i
   Double Precision :: tempcity(2)
 
+  ! Cost evaluation
   ! length of edges before being transformed
   old_sum = dist(a_prev, a) + dist(b, b_next)
   ! length of edges after transformation
   new_sum = dist(a_prev, b) + dist(a, b_next)
 
-  ! number of nodes in the a -> b segment
-  nodes_in_segment = MOD(b - a + N, N) + 1  !mod(7 - 3 + 40, 40) +1 = 5
+  ! half the number of nodes in the a -> b segment
   half = nodes_in_segment / 2
 
   Do i = 0, half - 1
@@ -152,7 +172,20 @@ Subroutine Transport()
   Implicit None
   Integer, Intent(In) :: a, b, a_prev, b_next
 
-  ! Insertion point selection O(1)
+  ! 
+  old_sum = 
+
+  ! Insertion point selection
+  nodes_not_in_segment = N - (nodes_in_segment + 2)
+  ! random number between 1 and <nodes_not_in_segment>
+  CALL RANDOM_NUMBER(r) 
+  c = NINT( r*nodes_not_in_segment + 0.5 )
+  ! put that random number after b_next
+  ins_point = MOD(b_next + c, N)
+
+  ins_prev = MOD(ins_point-2 + N, N) + 1  ! MOD to handle wrapping
+  ins_next = MOD(ins_point, N) + 1        ! ie. prev of 1st city is Nth city
+
 
   ! length of edges before being transformed
   old_sum = dist(a_prev, a) + dist(b, b_next)
@@ -223,3 +256,5 @@ Double Precision Function custom_rand(iseed,first)
   custom_rand = real(nextn)/real(modlus)
 !
 END Function custom_rand
+
+
