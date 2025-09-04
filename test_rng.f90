@@ -4,11 +4,11 @@ integer :: i, k, counts(7), a, b, nodes_in_segment, N, nodes_not_in_segment
 real :: r
 counts = 0
 
-nodes_not_in_segment = 4
+nodes_not_in_segment = 6
 
 do i = 1, 1000000
   call random_number(r)
-  k = INT( r*(nodes_not_in_segment + 1) ) + 1
+  k = INT( r*(nodes_not_in_segment-1) ) + 1
   counts(k) = counts(k) + 1
 end do
 

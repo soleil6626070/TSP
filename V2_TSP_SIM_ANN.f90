@@ -126,8 +126,8 @@ Subroutine Select_Segment()
   CALL RANDOM_NUMBER(r)
   a = NINT( r*N + 0.5 )
 
-  ! b is nodes_in_segment after a
-  b = MOD(a + nodes_in_segment, N)
+  ! a to b (inclusive) is nodes_in_segment long
+  b = MOD(a + (nodes_in_segment - 1), N)
 
   ! Indicies of previous and next city of the two swapped cities
   a_prev = MOD(a-2 + N, N) + 1
@@ -169,16 +169,25 @@ End Subroutine Reversed
 
 Subroutine Transport()
   Implicit None
-  Integer, Intent(In) :: a, b, a_prev, b_next
+  Integer, Intent(In) :: a, b, a_prev, b_next, nodes_in_segment
+  Double Precision, Intent(In) :: old_sum, new_sum
+  Integer :: i, position, nodes_not_in_segment
+
+  Integer, Allocatable :: segment(:), not_segment(:), new_tour(:)
+  Double Precision :: temp2City(2, :)
+  Double Precision, Intent(Out) :: City
+
+
 
   ! Insertion point selection O(1)
-  nodes_not_in_segment = N - (nodes_in_segment + 2)
-  ! random number between 0 and <nodes_not_in_segment> (inclusive)
+  nodes_not_in_segment = N - nodes_in_segment
+  ! random number between 1 and <nodes_not_in_segment - 1> (inclusive)
   CALL RANDOM_NUMBER(r) 
-  c = INT( r*(nodes_not_in_segment + 1) )
-  ! put that random number after b_next
-  ins_point = MOD(b_next + c, N)      ! ins_point can overlap with b_next
+  c = INT( r*(nodes_not_in_segment-1) ) + 1   ! ins_point cannot overlap with a_prev
+  ! put that random number after b
+  ins_point = MOD(b + c - 1, N) + 1   ! ins_point can overlap with b_next
   ins_next = MOD(ins_point, N) + 1    ! ins_next can overlap with a_prev
+
 
   ! Cost Evaluation
   ! length of edges before/after being transformed
@@ -186,9 +195,48 @@ Subroutine Transport()
   new_sum = dist(a_prev, b_next) + dist(ins_point, a) + dist(b, ins_next)
 
   ! Update values
+  !
+  Allocate(segment(nodes_in_segment))
+  Do i = 1, nodes_in_segment
+    position = MOD(a - 1 + (i-1), N) + 1
+    segment(i) = position
+  End Do
 
+  Allocate(not_segment(nodes_not_in_segment))
+  Do i = 1, nodes_not_in_segment
+    position = MOD(b_next - 1 + (i-1), N) + 1
+    not_segment(i) = position
+  End Do
+
+  Allocate(new_tour(N))
+  tour_idx = 0    ! Will be carried over multiple loops
+  Do i = 1, c
+    tour_idx = tour_idx + 1
+    new_tour(tour_idx) = not_segment(i)
+  End Do 
+  Do i = 1, nodes_in_segment
+    tour_idx = tour_idx + 1
+    new_tour(tour_idx) = segment(i)
+  End Do 
+  Do i = c+1, nodes_not_in_segment
+    tour_idx = tour_idx + 1
+    new_tour(tour_idx) = not_segment(i)
+  End Do
+
+  Allocate(temp2City(2, N))
+  Do i, N 
+    temp2City(:, i) = City(:,new_tour(i))
+  End Do 
+  City(:, 1:N) = temp2City(:, 1:N)
+
+  Deallocate(segment, not_segment, new_tour, temp2City)
+
+! Logic: terrible terrible O(2N) swapping
+! I need to initialise a linked list prev/next method
 
 End Subroutine
+
+
 
 Subroutine metropolis(dL, T, accprob, metropolis_accepted)
   Implicit None
