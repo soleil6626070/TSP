@@ -4,6 +4,8 @@
 
 Program V2_TSP
 
+-
+
 ! RNG
 first = 0
 iseed = 971741
@@ -40,48 +42,61 @@ Do z = 1, sample_size
     ! Temperature do loop 
     Do While ( T > 0.0 )
 
-        ! Inner do loop - 10*N better solutions or no more better sltns possible
+        ! Path transformation do loop - 10*N better solutions or no more better sltns possible
         attempted_moves = 0
         better_moves = 0
         Do While (better_moves < 10*N .AND. attempted_moves < 100*N)
-            ! Choose 2 cities at random
-            CALL Select_2_Cities(a_prev, a, b, b_next)
-            ! - 50/50 reverse or transport subroutine
+            ! Randomly select a segment of 3-5 cities
+            CALL Select_Segment(a_prev, a, b, b_next)
+
+            ! - 50/50 decision to reverse or transport segment
             CALL RANDOM_NUMBER(r)
-            If (r >= 0.5) Then
-                CALL Reverse(a, b, N, City)
-            Else
-                CALL Transport()
+            r_or_t = r
+
+            ! cost eval - Length of edges before/after being transformed
+            If (r_or_t >= 0.5) Then ! reverse cost evaluation
+                old_sum = dist(a_prev, a) + dist(b, b_next)
+                new_sum = dist(a_prev, b) + dist(a, b_next)
+            Else                    ! transport cost evaluation
+                old_sum = dist(a_prev, a) + dist(b, b_next) + dist(ins_point, ins_next)
+                new_sum = dist(a_prev, b_next) + dist(ins_point, a) + dist(b, ins_next)
             End If
-            ! - Evaluate new path length - cost evaluation
+            ! cost eval - new path length
             Lnew = L + new_sum - old_sum
             dL = Lnew - L
+
             ! - Call metropolis acceptance evaluation
             CALL metropolis(dL, T, accprob, metropolis_accepted)
+
             ! - update values
             If (metropolis_accepted) Then
-                L = Lnew
+              If (r_or_t >= 0.5) Then ! reverse
+                Call Reverse()
+              Else                    ! transport
+                Call Transport()
+              End If
+              L = Lnew
 
-                If (accprob < 1.0)
-                    better_moves = better_moves + 1
-                Else 
-                    worse_moves_accepted = worse_moves_accepted + 1
-                End If
+              If (accprob < 1.0)
+                better_moves = better_moves + 1
+              Else 
+                worse_moves_accepted = worse_moves_accepted + 1
+              End If
             Else 
-                City = City_savedpath  ! reset path to before the transformation
+              ! Reject - Do Nothing
             End If
             attempted_moves = attempted_moves + 1
             City_savedpath = City
-        ! End inner loop
-        End Do 
+        End Do  ! Path transformation
 
         ! Decrease temperature
         T = T * annealsched
         ! If no improvements were made from previous temp, system is deemed frozen
         If (previous_T_L <= L) T = -1.0
 
-    End Do
-End Do 
+    End Do  ! Temperature
+
+End Do  ! <sample_size> repititions
 
 
 ! Internal Functions/Subroutines
@@ -117,7 +132,9 @@ End Subroutine Select_2_Cities
 
 Subroutine Select_Segment()
   Double Precision :: r 
-  Integer, Intent(Out) :: a_prev, a, b, b_next, nodes_in_segment
+  Integer, Intent(In) :: N
+  Integer, Intent(Out) :: a_prev, a, b, b_next, c, ins_point, ins_next
+  Integer, Intent(Out) :: nodes_in_segment, nodes_not_in_segment
 
   ! Select segment of 3/4/5 cities ( 2/3/4 edges )
   CALL RANDOM_NUMBER(r)
@@ -133,6 +150,15 @@ Subroutine Select_Segment()
   a_prev = MOD(a-2 + N, N) + 1
   b_next = MOD(b, N) + 1
 
+  ! Insertion point selection O(1) for transport subroutine
+  nodes_not_in_segment = N - nodes_in_segment
+  ! random number between 1 and <nodes_not_in_segment - 1> (inclusive)
+  CALL RANDOM_NUMBER(r) 
+  c = INT( r*(nodes_not_in_segment-1) ) + 1   ! ins_point cannot overlap with a_prev
+  ! put that random number after b
+  ins_point = MOD(b + c - 1, N) + 1   ! ins_point can overlap with b_next
+  ins_next = MOD(ins_point, N) + 1    ! ins_next can overlap with a_prev
+
 End Subroutine
 
 Subroutine Reverse(a, b, N, City)
@@ -141,11 +167,6 @@ Subroutine Reverse(a, b, N, City)
   Double Precision, Intent(Out) :: old_sum, new_sum
   Integer :: half, left, right, i
   Double Precision :: tempcity(2)
-
-  ! Cost evaluation
-  ! length of edges before/after being transformed
-  old_sum = dist(a_prev, a) + dist(b, b_next)
-  new_sum = dist(a_prev, b) + dist(a, b_next)
 
   ! half the number of nodes in the a -> b segment
   half = nodes_in_segment / 2
@@ -169,30 +190,14 @@ End Subroutine Reversed
 
 Subroutine Transport()
   Implicit None
-  Integer, Intent(In) :: a, b, a_prev, b_next, nodes_in_segment
+  Integer, Intent(In) :: a, b, a_prev, b_next, c, ins_point, ins_next
+  Integer, Intent(In) :: nodes_in_segment, nodes_not_in_segment
   Double Precision, Intent(In) :: old_sum, new_sum
   Integer :: i, position, nodes_not_in_segment
 
   Integer, Allocatable :: segment(:), not_segment(:), new_tour(:)
   Double Precision :: temp2City(2, :)
   Double Precision, Intent(Out) :: City
-
-
-
-  ! Insertion point selection O(1)
-  nodes_not_in_segment = N - nodes_in_segment
-  ! random number between 1 and <nodes_not_in_segment - 1> (inclusive)
-  CALL RANDOM_NUMBER(r) 
-  c = INT( r*(nodes_not_in_segment-1) ) + 1   ! ins_point cannot overlap with a_prev
-  ! put that random number after b
-  ins_point = MOD(b + c - 1, N) + 1   ! ins_point can overlap with b_next
-  ins_next = MOD(ins_point, N) + 1    ! ins_next can overlap with a_prev
-
-
-  ! Cost Evaluation
-  ! length of edges before/after being transformed
-  old_sum = dist(a_prev, a) + dist(b, b_next) + dist(ins_point, ins_next)
-  new_sum = dist(a_prev, b_next) + dist(ins_point, a) + dist(b, ins_next)
 
   ! Update values
   !
