@@ -3,8 +3,24 @@
 ! reverse/transport path swaps
 
 Program V2_TSP
+  Implicit None
+  Integer, Parameter :: N = 50  ! # of Cities
+  Real, Dimension(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
 
--
+  Double Precision :: T, annealsched
+  Double Precision :: L, Lnew, dL, Lini
+  Double Precision :: r, r_or_t, accprob
+  Integer :: i, j, z
+  Integer :: better_moves, attempted_moves, worse_moves_accepted
+  Logical :: metropolis_accepted
+  ! swapping
+  Integer :: a, b, c, ins_point, ins_next
+  Integer :: a_prev, a_next, b_prev, b_next
+  Integer :: nodes_in_segment, nodes_not_in_segment
+  Double Precision :: old_sum, new_sum
+  ! rng
+  Integer :: iseed, first
+
 
 ! RNG
 first = 0
@@ -47,7 +63,7 @@ Do z = 1, sample_size
         better_moves = 0
         Do While (better_moves < 10*N .AND. attempted_moves < 100*N)
             ! Randomly select a segment of 3-5 cities
-            CALL Select_Segment(a_prev, a, b, b_next)
+            CALL Select_Segment(N, a_prev, a, b, b_next, c, ins_point, ins_next, nodes_in_segment, nodes_not_in_segment)
 
             ! - 50/50 decision to reverse or transport segment
             CALL RANDOM_NUMBER(r)
@@ -71,9 +87,9 @@ Do z = 1, sample_size
             ! - update values
             If (metropolis_accepted) Then
               If (r_or_t >= 0.5) Then ! reverse
-                Call Reverse()
+                Call Reverse(a, b, a_next, b_prev, N, nodes_in_segment, City, old_sum, new_sum)
               Else                    ! transport
-                Call Transport()
+                Call Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segment, nodes_not_in_segment, old_sum, new_sum, City)
               End If
               L = Lnew
 
@@ -130,7 +146,7 @@ Subroutine Select_2_Cities(a_prev, a, b, b_next)
   END DO
 End Subroutine Select_2_Cities
 
-Subroutine Select_Segment()
+Subroutine Select_Segment(N, a_prev, a, b, b_next, c, ins_point, ins_next, nodes_in_segment, nodes_not_in_segment)
   Double Precision :: r 
   Integer, Intent(In) :: N
   Integer, Intent(Out) :: a_prev, a, b, b_next, c, ins_point, ins_next
@@ -161,7 +177,7 @@ Subroutine Select_Segment()
 
 End Subroutine
 
-Subroutine Reverse(a, b, N, City)
+Subroutine Reverse(a, b, a_next, b_prev, N, nodes_in_segment, City, old_sum, new_sum)
   Integer, Intent(In) :: a, b, a_next, b_prev, N, nodes_in_segment
   Integer, Intent(InOut) :: City
   Double Precision, Intent(Out) :: old_sum, new_sum
@@ -188,7 +204,7 @@ Subroutine Reverse(a, b, N, City)
   ! point to start+1 and end-1, repeat.
 End Subroutine Reversed 
 
-Subroutine Transport()
+Subroutine Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segment, nodes_not_in_segment, old_sum, new_sum, City)
   Implicit None
   Integer, Intent(In) :: a, b, a_prev, b_next, c, ins_point, ins_next
   Integer, Intent(In) :: nodes_in_segment, nodes_not_in_segment
