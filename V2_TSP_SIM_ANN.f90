@@ -5,9 +5,9 @@
 Program V2_TSP
   Implicit None
   Integer, Parameter :: N = 50  ! # of Cities
-  Real, Dimension(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
+  Double Precision, Dimension(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
 
-  Double Precision :: T, annealsched
+  Double Precision :: T, prev_T, annealsched
   Double Precision :: L, Lnew, dL, Lini
   Double Precision :: r, r_or_t, accprob
   Integer :: i, j, z
@@ -26,6 +26,9 @@ Program V2_TSP
 first = 0
 iseed = 971741
 
+!
+sample_size = 10
+
 ! Randomly assign coordinates to N cities
 DO i = 1,N
     City(1,i) = custom_rand(iseed,first)
@@ -42,6 +45,8 @@ END DO
 ! add return trip home
 Lini = Lini + dist(N,1)
 
+Write(6,*) "Lini: ", Lini
+
 ! Outer do loop to repeat the program <sample size> times
 Do z = 1, sample_size
 
@@ -50,7 +55,8 @@ Do z = 1, sample_size
     first = 0 
 
     ! Variable Initalisations
-    T = 100*N 
+    T = 100*N
+    prev_T = T + 10 
     annealsched = 0.9
     City = City_ini
     L = Lini
@@ -89,11 +95,12 @@ Do z = 1, sample_size
               If (r_or_t >= 0.5) Then ! reverse
                 Call Reverse(a, b, a_next, b_prev, N, nodes_in_segment, City, old_sum, new_sum)
               Else                    ! transport
-                Call Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segment, nodes_not_in_segment, old_sum, new_sum, City)
+                Call Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segment, &
+                                nodes_not_in_segment, old_sum, new_sum, City)
               End If
               L = Lnew
 
-              If (accprob < 1.0)
+              If (accprob < 1.0) Then
                 better_moves = better_moves + 1
               Else 
                 worse_moves_accepted = worse_moves_accepted + 1
@@ -108,9 +115,13 @@ Do z = 1, sample_size
         ! Decrease temperature
         T = T * annealsched
         ! If no improvements were made from previous temp, system is deemed frozen
-        If (previous_T_L <= L) T = -1.0
+        If (prev_T <= L) T = -1.0
+        prev_T = T
 
     End Do  ! Temperature
+
+    Write(6,*)'The L #',z,'is', L 
+    Write(6,*) " "
 
 End Do  ! <sample_size> repititions
 
@@ -175,11 +186,11 @@ Subroutine Select_Segment(N, a_prev, a, b, b_next, c, ins_point, ins_next, nodes
   ins_point = MOD(b + c - 1, N) + 1   ! ins_point can overlap with b_next
   ins_next = MOD(ins_point, N) + 1    ! ins_next can overlap with a_prev
 
-End Subroutine
+End Subroutine Select_Segment
 
 Subroutine Reverse(a, b, a_next, b_prev, N, nodes_in_segment, City, old_sum, new_sum)
   Integer, Intent(In) :: a, b, a_next, b_prev, N, nodes_in_segment
-  Integer, Intent(InOut) :: City
+  Double Precision, Intent(InOut) :: City
   Double Precision, Intent(Out) :: old_sum, new_sum
   Integer :: half, left, right, i
   Double Precision :: tempcity(2)
@@ -202,18 +213,17 @@ Subroutine Reverse(a, b, a_next, b_prev, N, nodes_in_segment, City, old_sum, new
   ! 2 pointers pointing to the start and end of the array
   ! Swap them, and then advance the iteration by one to then
   ! point to start+1 and end-1, repeat.
-End Subroutine Reversed 
+End Subroutine Reverse 
 
 Subroutine Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segment, nodes_not_in_segment, old_sum, new_sum, City)
-  Implicit None
   Integer, Intent(In) :: a, b, a_prev, b_next, c, ins_point, ins_next
   Integer, Intent(In) :: nodes_in_segment, nodes_not_in_segment
   Double Precision, Intent(In) :: old_sum, new_sum
-  Integer :: i, position, nodes_not_in_segment
+  Integer :: i, position
 
   Integer, Allocatable :: segment(:), not_segment(:), new_tour(:)
   Double Precision :: temp2City(2, :)
-  Double Precision, Intent(Out) :: City
+  Double Precision, Intent(InOut) :: City
 
   ! Update values
   !
@@ -255,7 +265,7 @@ Subroutine Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segm
 ! Logic: terrible terrible O(2N) swapping
 ! I need to initialise a linked list prev/next method
 
-End Subroutine
+End Subroutine Transport
 
 
 
@@ -280,7 +290,7 @@ Subroutine metropolis(dL, T, accprob, metropolis_accepted)
 
 END Subroutine metropolis
 
-End Program V2_TSPTSP
+End Program V2_TSP
 
 
 !----------External Function---------
