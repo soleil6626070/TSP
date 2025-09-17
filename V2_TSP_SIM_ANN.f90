@@ -24,7 +24,6 @@ Program V2_TSP
   Integer :: iseed, first
 
 
-
 ! RNG
 first = 0
 iseed = 971741
@@ -58,7 +57,7 @@ Do z = 1, sample_size
     first = 0 
 
     ! Variable Initalisations
-    T = 10*N
+    T = 1
     annealsched = 0.9
     City = City_ini
     L = Lini
@@ -67,10 +66,10 @@ Do z = 1, sample_size
     ! Temperature do loop 
     Do While ( T > 0.0 )
 
-        ! Path transformation do loop - 10*N better solutions or no more better sltns possible
         attempted_moves = 0
         better_moves = 0
-        Do While (better_moves < 10*N .AND. attempted_moves < 100*N)
+        ! Path transformation do loop
+        Do While (better_moves < 10*N .AND. attempted_moves < 10*N)
             ! Randomly select a segment of 3-5 cities
             CALL Select_Segment(N, a_prev, a, b, b_next, c, ins_point, ins_next, nodes_in_segment, nodes_not_in_segment)
 
@@ -115,12 +114,15 @@ Do z = 1, sample_size
             attempted_moves = attempted_moves + 1
             City_savedpath = City
         End Do  ! Path transformation
-
+        
+        ! Output this temperature intevals results
+        WRITE(*,'("L = ",F6.2,", Temp = ",F10.6,",  Moves = ",I6)') L, T, attempted_moves
         ! Decrease temperature
         T = T * annealsched
         ! If no improvements were made from previous temp, system is deemed frozen
-        If (prev_L <= L) T = -1.0
-        prev_L = L
+        If (better_moves == 0) T = -1.0
+        !If (prev_L <= L) T = -1.0
+        !prev_L = L
 
     End Do  ! Temperature
 
@@ -175,7 +177,7 @@ Subroutine Select_Segment(N, a_prev, a, b, b_next, c, ins_point, ins_next, nodes
   a = NINT( r*N + 0.5 )
 
   ! a to b (inclusive) is nodes_in_segment long
-  b = MOD(a + (nodes_in_segment - 1), N)
+  b = MOD(a + (nodes_in_segment - 1) - 1, N) + 1
 
   ! Indicies of previous and next city of the two swapped cities
   a_prev = MOD(a-2 + N, N) + 1
