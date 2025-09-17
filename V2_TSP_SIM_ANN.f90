@@ -76,7 +76,6 @@ Do z = 1, sample_size
             ! - 50/50 decision to reverse or transport segment
             CALL RANDOM_NUMBER(r)
             r_or_t = r
-            r_or_t = 0.7
 
             ! cost eval - Length of edges before/after being transformed
             If (r_or_t >= 0.5) Then ! reverse cost evaluation
@@ -116,7 +115,7 @@ Do z = 1, sample_size
         End Do  ! Path transformation
         
         ! Output this temperature intevals results
-        WRITE(*,'("L = ",F6.2,", Temp = ",F10.6,",  Moves = ",I6)') L, T, attempted_moves
+        WRITE(*,'("L = ",F6.2,", Temp = ",F10.6,", att_Moves = ",I6,", bet_Moves = ",I6)') L, T, attempted_moves, better_moves
         ! Decrease temperature
         T = T * annealsched
         ! If no improvements were made from previous temp, system is deemed frozen
