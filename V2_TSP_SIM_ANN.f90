@@ -6,20 +6,23 @@ Program V2_TSP
   Implicit None
   Integer, Parameter :: N = 50  ! # of Cities
   Double Precision, Dimension(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
-
-  Double Precision :: T, prev_T, annealsched
-  Double Precision :: L, Lnew, dL, Lini
+  Integer :: sample_size
+  Double Precision :: T, annealsched
+  Double Precision :: L, Lnew, dL, Lini, prev_L
   Double Precision :: r, r_or_t, accprob
   Integer :: i, j, z
-  Integer :: better_moves, attempted_moves, worse_moves_accepted
   Logical :: metropolis_accepted
-  ! swapping
+  ! Swapping
   Integer :: a, b, c, ins_point, ins_next
   Integer :: a_prev, a_next, b_prev, b_next
   Integer :: nodes_in_segment, nodes_not_in_segment
   Double Precision :: old_sum, new_sum
+  ! Tracking
+  Integer :: better_moves, attempted_moves, worse_moves_accepted
   ! rng
+  Double Precision :: custom_rand
   Integer :: iseed, first
+
 
 
 ! RNG
@@ -55,11 +58,11 @@ Do z = 1, sample_size
     first = 0 
 
     ! Variable Initalisations
-    T = 100*N
-    prev_T = T + 10 
+    T = 10*N
     annealsched = 0.9
     City = City_ini
     L = Lini
+    prev_L = L + 10
 
     ! Temperature do loop 
     Do While ( T > 0.0 )
@@ -74,6 +77,7 @@ Do z = 1, sample_size
             ! - 50/50 decision to reverse or transport segment
             CALL RANDOM_NUMBER(r)
             r_or_t = r
+            r_or_t = 0.7
 
             ! cost eval - Length of edges before/after being transformed
             If (r_or_t >= 0.5) Then ! reverse cost evaluation
@@ -115,8 +119,8 @@ Do z = 1, sample_size
         ! Decrease temperature
         T = T * annealsched
         ! If no improvements were made from previous temp, system is deemed frozen
-        If (prev_T <= L) T = -1.0
-        prev_T = T
+        If (prev_L <= L) T = -1.0
+        prev_L = L
 
     End Do  ! Temperature
 
@@ -190,7 +194,7 @@ End Subroutine Select_Segment
 
 Subroutine Reverse(a, b, a_next, b_prev, N, nodes_in_segment, City, old_sum, new_sum)
   Integer, Intent(In) :: a, b, a_next, b_prev, N, nodes_in_segment
-  Double Precision, Intent(InOut) :: City
+  Double Precision, Dimension(1:2,1:N), Intent(InOut) :: City
   Double Precision, Intent(Out) :: old_sum, new_sum
   Integer :: half, left, right, i
   Double Precision :: tempcity(2)
@@ -200,8 +204,8 @@ Subroutine Reverse(a, b, a_next, b_prev, N, nodes_in_segment, City, old_sum, new
 
   Do i = 0, half - 1
     ! 2 pointers - same logic as palindrome check
-    left = MOD(a - 1 + iterable, N) + 1
-    right = MOD(b - 1 - iterable + N, N) + 1
+    left = MOD(a - 1 + i, N) + 1
+    right = MOD(b - 1 - i + N, N) + 1
     ! swap
     tempcity(:) = City(:,left)
     City(:,left) = City(:,right)
@@ -219,11 +223,11 @@ Subroutine Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segm
   Integer, Intent(In) :: a, b, a_prev, b_next, c, ins_point, ins_next
   Integer, Intent(In) :: nodes_in_segment, nodes_not_in_segment
   Double Precision, Intent(In) :: old_sum, new_sum
-  Integer :: i, position
+  Integer :: i, position, tour_idx
 
   Integer, Allocatable :: segment(:), not_segment(:), new_tour(:)
-  Double Precision :: temp2City(2, :)
-  Double Precision, Intent(InOut) :: City
+  Double Precision, Allocatable :: temp2City(:,:)
+  Double Precision, Dimension(1:2,1:N), Intent(InOut) :: City
 
   ! Update values
   !
@@ -255,7 +259,7 @@ Subroutine Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segm
   End Do
 
   Allocate(temp2City(2, N))
-  Do i, N 
+  Do i = 1, N 
     temp2City(:, i) = City(:,new_tour(i))
   End Do 
   City(:, 1:N) = temp2City(:, 1:N)
