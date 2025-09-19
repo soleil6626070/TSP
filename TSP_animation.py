@@ -4,7 +4,7 @@
 #!/usr/bin/env python3
 """
 TSP Simulated Annealing Animation Generator
-Creates an animated visualization from tsp_log_best.txt file
+Creates an animated visualization from v2_tsp_log.txt file
 """
 
 import numpy as np
@@ -14,7 +14,9 @@ from matplotlib.gridspec import GridSpec
 from PIL import Image
 import os
 
-def parse_log_file(filename='tsp_log_best.txt'):
+frame_duration_ms = 300
+
+def parse_log_file(filename='v2_tsp_log.txt'):
     """Parse the TSP log file to extract iteration, length, temperature, and path data"""
     
     iterations = []
@@ -56,8 +58,8 @@ def parse_log_file(filename='tsp_log_best.txt'):
 def create_animation():
     """Create the animated visualization"""
     
-    print("Reading tsp_log_best.txt...")
-    iterations, lengths, temperatures, paths, iseed = parse_log_file('tsp_log_best.txt')
+    print("Reading v2_tsp_log.txt...")
+    iterations, lengths, temperatures, paths, iseed = parse_log_file('v2_tsp_log.txt')
     n_frames = len(iterations)
     
     print(f"Found {n_frames} data points")
@@ -151,16 +153,16 @@ def create_animation():
     print("Creating animation...")
     anim = animation.FuncAnimation(
         fig, animate, init_func=init,
-        frames=n_frames, interval=100,
+        frames=n_frames, interval=frame_duration_ms,
         blit=True, repeat=True
     )
     
     # Save as GIF
-    print("Saving as tsp_animation.gif...")
+    print("Saving as v2_tsp_animation.gif...")
     writer = animation.PillowWriter(fps=10)
-    anim.save('tsp_animation.gif', writer=writer)
+    anim.save('v2_tsp_animation.gif', writer=writer)
     
-    print("Animation saved as tsp_animation.gif")
+    print("Animation saved as v2_tsp_animation.gif")
     
     # Also save as MP4 if ffmpeg is available
     try:
@@ -176,8 +178,8 @@ def create_animation():
 def create_static_frames():
     """Alternative: Create individual PNG frames that can be assembled into GIF/video"""
     
-    print("Reading tsp_log_best.txt...")
-    iterations, lengths, temperatures, paths, iseed = parse_log_file('tsp_log_best.txt')
+    print("Reading v2_tsp_log.txt...")
+    iterations, lengths, temperatures, paths, iseed = parse_log_file('v2_tsp_log.txt')
     n_frames = len(iterations)
     
     # Create output directory
@@ -265,8 +267,8 @@ if __name__ == "__main__":
     print("-" * 40)
     
     # Check if log file exists
-    if not os.path.exists('tsp_log_best.txt'):
-        print("Error: tsp_log_best.txt not found!")
+    if not os.path.exists('v2_tsp_log.txt'):
+        print("Error: v2_tsp_log.txt not found!")
         print("Make sure the Fortran program has been run and created the log file.")
         exit(1)
     
