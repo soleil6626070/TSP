@@ -4,31 +4,36 @@
 
 Program V2_TSP
   Implicit None
+  Integer :: sample_size
   Integer, Parameter :: N = 50  ! # of Cities
   Double Precision, Dimension(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
-  Integer :: sample_size
   Double Precision :: T, annealsched
   Double Precision :: L, Lnew, dL, Lini, prev_L
   Double Precision :: r, r_or_t, accprob
   Integer :: i, j, z
+  ! Cost Function
+  Double Precision :: old_sum, new_sum
   Logical :: metropolis_accepted
-  ! Swapping
+  ! Segment selection
   Integer :: a, b, c, ins_point, ins_next
   Integer :: a_prev, a_next, b_prev, b_next
   Integer :: nodes_in_segment, nodes_not_in_segment
-  Double Precision :: old_sum, new_sum
   ! Tracking
-  Integer :: better_moves, attempted_moves, worse_moves_accepted
+  Integer :: better_moves, attempted_moves, worse_moves_accepted, iter
   ! rng
   Double Precision :: custom_rand
   Integer :: iseed, first
+  ! Logging data
+  Logical :: write_data
 
+! Log data to file?
+write_data = .TRUE.
 
 ! RNG
 first = 0
 iseed = 971741
 
-!
+! Program repetions
 sample_size = 10
 
 ! Randomly assign coordinates to N cities
@@ -62,6 +67,13 @@ Do z = 1, sample_size
     City = City_ini
     L = Lini
     prev_L = L + 10
+    iter = 0
+
+    ! Open file to log data for visualisation
+    IF (write_data) THEN
+      OPEN(20, file='v2_tsp_log.txt', status='replace')
+      WRITE(20,'(A,I0)') 'Iteration #, Length, Temperature, Path (x1,y1,x2,y2,...,x1,y1), iseed: ', iseed
+    END IF
 
     ! Temperature do loop 
     Do While ( T > 0.0 )
@@ -111,11 +123,14 @@ Do z = 1, sample_size
               ! Reject - Do Nothing
             End If
             attempted_moves = attempted_moves + 1
+            iter = iter + 1
             City_savedpath = City
         End Do  ! Path transformation
         
         ! Output this temperature intevals results
         WRITE(*,'("L = ",F6.2,", Temp = ",F10.6,", att_Moves = ",I6,", bet_Moves = ",I6)') L, T, attempted_moves, better_moves
+        ! Log Data to File
+        If (write_data) Call log_data_to_file(iter, T, L, City, N)
         ! Decrease temperature
         T = T * annealsched
         ! If no improvements were made from previous temp, system is deemed frozen
@@ -124,6 +139,8 @@ Do z = 1, sample_size
         !prev_L = L
 
     End Do  ! Temperature
+
+    If (write_data) Close(20)
 
     Write(6,*)'The L #',z,'is', L 
     Write(6,*) " "
@@ -162,6 +179,7 @@ Subroutine Select_2_Cities(a_prev, a, b, b_next)
   END DO
 End Subroutine Select_2_Cities
 
+
 Subroutine Select_Segment(N, a_prev, a, b, b_next, c, ins_point, ins_next, nodes_in_segment, nodes_not_in_segment)
   Double Precision :: r 
   Integer, Intent(In) :: N
@@ -193,6 +211,7 @@ Subroutine Select_Segment(N, a_prev, a, b, b_next, c, ins_point, ins_next, nodes
 
 End Subroutine Select_Segment
 
+
 Subroutine Reverse(a, b, a_next, b_prev, N, nodes_in_segment, City, old_sum, new_sum)
   Integer, Intent(In) :: a, b, a_next, b_prev, N, nodes_in_segment
   Double Precision, Dimension(1:2,1:N), Intent(InOut) :: City
@@ -219,6 +238,7 @@ Subroutine Reverse(a, b, a_next, b_prev, N, nodes_in_segment, City, old_sum, new
   ! Swap them, and then advance the iteration by one to then
   ! point to start+1 and end-1, repeat.
 End Subroutine Reverse 
+
 
 Subroutine Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segment, nodes_not_in_segment, old_sum, new_sum, City)
   Integer, Intent(In) :: a, b, a_prev, b_next, c, ins_point, ins_next
@@ -273,7 +293,6 @@ Subroutine Transport(a, b, a_prev, b_next, c, ins_point, ins_next, nodes_in_segm
 End Subroutine Transport
 
 
-
 Subroutine metropolis(dL, T, accprob, metropolis_accepted)
   Implicit None
   Double Precision, INTENT(in) :: dL, T
@@ -294,6 +313,23 @@ Subroutine metropolis(dL, T, accprob, metropolis_accepted)
   ! number between 0 and 1)
 
 END Subroutine metropolis
+
+
+Subroutine log_data_to_file(iter, T, L, City, N)
+Implicit None
+Double Precision, Intent(In) :: T, L
+Integer, Intent(In) :: iter, N
+Double Precision, Dimension(1:2,1:N), Intent(In) :: City
+Integer :: o 
+
+WRITE(20,'(I8, 2X, F12.6, 2X, F12.6, 2X)', ADVANCE='NO') iter, L, T 
+DO o = 1, N
+  WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City(1,o), City(2,o)
+END DO
+WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City(1,1), City(2,1)  ! Close loop with 1st city
+WRITE(20,*) ! Empty write to advance line
+
+End Subroutine log_data_to_file
 
 End Program V2_TSP
 
