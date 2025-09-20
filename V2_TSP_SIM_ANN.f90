@@ -8,7 +8,7 @@ Program V2_TSP
   Integer, Parameter :: N = 50  ! # of Cities
   Double Precision, Dimension(1:2,1:N) :: City, City_savedpath, Lmin_array, City_ini
   Double Precision :: T, annealsched
-  Double Precision :: L, Lnew, dL, Lini, prev_L
+  Double Precision :: L, Lnew, dL, Lini, prev_L, Lmin_scalar
   Double Precision :: r, r_or_t, accprob
   Integer :: i, j, z
   ! Cost Function
@@ -53,6 +53,9 @@ END DO
 Lini = Lini + dist(N,1)
 
 Write(6,*) "Lini: ", Lini
+
+! Statistic tracking
+Lmin_scalar = Lini + 1
 
 ! Outer do loop to repeat the program <sample size> times
 Do z = 1, sample_size
@@ -141,6 +144,7 @@ Do z = 1, sample_size
 
     End Do  ! Temperature
 
+    Call save_best_run(L, Lmin_scalar, Lmin_array, write_data, City_savedpath, N)
     If (write_data) Close(20)
 
     Write(6,*)'The L #',z,'is', L 
@@ -331,6 +335,35 @@ WRITE(20,'(F0.6,",",F0.6,",")', ADVANCE='NO') City(1,1), City(2,1)  ! Close loop
 WRITE(20,*) ! Empty write to advance line
 
 End Subroutine log_data_to_file
+
+Subroutine save_best_run(L, Lmin_scalar, Lmin_array, write_data, City_savedpath, N)
+Implicit None 
+Double Precision, Intent(In) :: L
+Double Precision, Intent(InOut) :: Lmin_scalar
+Integer, Intent(In) :: N
+Logical, Intent(In) :: write_data
+Double Precision, Dimension(1:2,1:N) :: City_savedpath, Lmin_array
+Integer :: k 
+
+IF (L < Lmin_scalar ) THEN
+    Lmin_array = City_savedpath 
+    Lmin_scalar = L
+    OPEN(10, file='V2CitiesPlot.txt')
+      DO k = 1,N
+        WRITE(10,'(2f12.6)')Lmin_array(1,k), Lmin_array(2,k)
+      END DO
+      ! Add the first city for plotting
+      WRITE(10,'(2f12.6)')Lmin_array(1,1), Lmin_array(2,1)
+    CLOSE(10)
+
+    IF (write_data) THEN
+      FLUSH(20)
+      ! Save best log file
+      !CALL EXECUTE_COMMAND_LINE('cp tsp_log.txt tsp_log_best.txt')    ! Linux
+      CALL EXECUTE_COMMAND_LINE('copy v2_tsp_log.txt v2_tsp_log_best.txt')  ! Windows
+    END IF
+  END IF
+End Subroutine save_best_run
 
 End Program V2_TSP
 

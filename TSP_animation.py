@@ -14,7 +14,7 @@ from matplotlib.gridspec import GridSpec
 from PIL import Image
 import os
 
-frame_duration_ms = 300
+frame_duration_ms = 500
 
 def parse_log_file(filename='v2_tsp_log.txt'):
     """Parse the TSP log file to extract iteration, length, temperature, and path data"""
