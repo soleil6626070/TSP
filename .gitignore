@@ -1,5 +1,6 @@
 # ignore legacy folder
 mechmodel
+simulatedannealing_docx.docx
 
 .venv
 *.exe
