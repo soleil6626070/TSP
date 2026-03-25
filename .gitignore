@@ -3,3 +3,5 @@ mechmodel
 
 .venv
 *.exe
+*.o
+*.mod

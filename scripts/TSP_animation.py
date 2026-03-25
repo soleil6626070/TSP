@@ -16,7 +16,7 @@ import os
 
 frame_duration_ms = 300
 
-def parse_log_file(filename='v2_tsp_log.txt'):
+def parse_log_file(filename='output/v2_tsp_log.txt'):
     """Parse the TSP log file to extract iteration, length, temperature, and path data"""
     
     iterations = []
@@ -58,10 +58,10 @@ def parse_log_file(filename='v2_tsp_log.txt'):
 def create_animation():
     """Create the animated visualization"""
     
-    print("Reading v2_tsp_log.txt...")
-    iterations, lengths, temperatures, paths, iseed = parse_log_file('v2_tsp_log.txt')
+    print("Reading output/v2_tsp_log.txt...")
+    iterations, lengths, temperatures, paths, iseed = parse_log_file('output/v2_tsp_log.txt')
     n_frames = len(iterations)
-    
+
     print(f"Found {n_frames} data points")
     print(f"Iterations range: {iterations[0]} to {iterations[-1]}")
     print(f"Length range: {lengths.min():.2f} to {lengths.max():.2f}")
@@ -158,18 +158,18 @@ def create_animation():
     )
     
     # Save as GIF
-    print("Saving as v2_tsp_animation.gif...")
+    print("Saving as output/v2_tsp_animation.gif...")
     writer = animation.PillowWriter(fps=10)
-    anim.save('v2_tsp_animation.gif', writer=writer)
-    
-    print("Animation saved as v2_tsp_animation.gif")
+    anim.save('output/v2_tsp_animation.gif', writer=writer)
+
+    print("Animation saved as output/v2_tsp_animation.gif")
     
     # Also save as MP4 if ffmpeg is available
     try:
-        print("Attempting to save as tsp_animation.mp4...")
+        print("Attempting to save as output/tsp_animation.mp4...")
         writer = animation.FFMpegWriter(fps=10)
-        anim.save('tsp_animation.mp4', writer=writer)
-        print("Animation saved as tsp_animation.mp4")
+        anim.save('output/tsp_animation.mp4', writer=writer)
+        print("Animation saved as output/tsp_animation.mp4")
     except:
         print("Could not save as MP4 (ffmpeg may not be installed)")
     
@@ -178,12 +178,12 @@ def create_animation():
 def create_static_frames():
     """Alternative: Create individual PNG frames that can be assembled into GIF/video"""
     
-    print("Reading v2_tsp_log.txt...")
-    iterations, lengths, temperatures, paths, iseed = parse_log_file('v2_tsp_log.txt')
+    print("Reading output/v2_tsp_log.txt...")
+    iterations, lengths, temperatures, paths, iseed = parse_log_file('output/v2_tsp_log.txt')
     n_frames = len(iterations)
-    
+
     # Create output directory
-    os.makedirs('frames_output', exist_ok=True)
+    os.makedirs('output/frames_output', exist_ok=True)
     
     print(f"Creating {n_frames} frames...")
     
@@ -237,38 +237,38 @@ def create_static_frames():
         plt.tight_layout()
         
         # Save frame
-        frame_filename = f'frames_output/frame_{idx:04d}.png'
+        frame_filename = f'output/frames_output/frame_{idx:04d}.png'
         plt.savefig(frame_filename, dpi=100, bbox_inches='tight')
         plt.close()
         
         if idx % 10 == 0:
             print(f"  Created frame {idx}/{n_frames}")
     
-    print(f"All frames saved in frames_output/")
+    print(f"All frames saved in output/frames_output/")
     
     # Create GIF from frames
     print("Creating GIF from frames...")
     frames = []
     for idx in range(n_frames):
-        img = Image.open(f'frames_output/frame_{idx:04d}.png')
+        img = Image.open(f'output/frames_output/frame_{idx:04d}.png')
         frames.append(img)
     
     frames[0].save(
-        'tsp_animation_from_frames.gif',
+        'output/tsp_animation_from_frames.gif',
         save_all=True,
         append_images=frames[1:],
         duration=100,  # milliseconds per frame
         loop=0
     )
-    print("Animation saved as tsp_animation_from_frames.gif")
+    print("Animation saved as output/tsp_animation_from_frames.gif")
 
 if __name__ == "__main__":
     print("TSP Animation Generator")
     print("-" * 40)
     
     # Check if log file exists
-    if not os.path.exists('v2_tsp_log.txt'):
-        print("Error: v2_tsp_log.txt not found!")
+    if not os.path.exists('output/v2_tsp_log.txt'):
+        print("Error: output/v2_tsp_log.txt not found!")
         print("Make sure the Fortran program has been run and created the log file.")
         exit(1)
     

@@ -80,7 +80,7 @@ first = 0
 
 !---------- Open file for gif data ----------
 IF (write_data) THEN
-  OPEN(20, file='tsp_log.txt', status='replace')
+  OPEN(20, file='output/tsp_log.txt', status='replace')
   !WRITE(20,'(A)') 'Iteration #, Length, p, Path (x1,y1,x2,y2,...,x1,y1)' old
   WRITE(20,'(A,I0)') 'Iteration #, Length, p, Path (x1,y1,x2,y2,...,x1,y1), iseed: ', iseed
 END IF
@@ -236,7 +236,7 @@ END IF
  IF (L < Lmin_scalar ) THEN                       !mayb2
      Lmin_array = City_savedpath 
      Lmin_scalar = L
-     OPEN(10, file='CitiesPlot.txt')
+     OPEN(10, file='output/CitiesPlot.txt')
 
        DO k = 1,N
          WRITE(10,'(2f12.6)')Lmin_array(1,k), Lmin_array(2,k)
@@ -249,8 +249,8 @@ END IF
     IF (write_data) THEN
       FLUSH(20)
       ! Save best log file
-      !CALL EXECUTE_COMMAND_LINE('cp tsp_log.txt tsp_log_best.txt')    ! Linux
-      CALL EXECUTE_COMMAND_LINE('copy tsp_log.txt tsp_log_best.txt')  ! Windows
+      CALL EXECUTE_COMMAND_LINE('cp output/tsp_log.txt output/tsp_log_best.txt')    ! Linux
+      !CALL EXECUTE_COMMAND_LINE('copy output\tsp_log.txt output\tsp_log_best.txt')  ! Windows
     END IF
   END IF
 

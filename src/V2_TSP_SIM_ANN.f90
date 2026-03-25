@@ -71,7 +71,7 @@ Do z = 1, sample_size
 
     ! Open file to log data for visualisation
     IF (write_data) THEN
-      OPEN(20, file='v2_tsp_log.txt', status='replace')
+      OPEN(20, file='output/v2_tsp_log.txt', status='replace')
       WRITE(20,'(A,I0)') 'Iteration #, Length, Temperature, Path (x1,y1,x2,y2,...,x1,y1), iseed: ', iseed
       Call log_data_to_file(iter, T, L, City, N)
     END IF
