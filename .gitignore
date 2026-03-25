@@ -1,3 +1,5 @@
-# ignore mechmodel folder
+# ignore legacy folder
 mechmodel
+
 .venv
+*.exe
