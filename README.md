@@ -25,11 +25,11 @@ A significant improvement to the code was implimented by computing the path leng
 
 ## Visualisation
 
-Early version of the program, with O(N) path length calculation:
-![O(N) Random Swaps](Random_swapping.gif)
-
 V1 animation of random swaps, but with improved O(1) path length calculation:
 ![V1 Animation](tsp_animation.gif)
+
+Extended runtime version of random swaps algorithm:
+![O(N) Random Swaps](Random_swapping.gif)
 
 Gnuplot script (`plot.gp`) to quickly check weather the path was feasable during early development:
 ![Gnuplot](tsp_path.png)
