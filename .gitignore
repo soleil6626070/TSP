@@ -3,3 +3,6 @@ mechmodel
 
 .venv
 *.exe
+
+#brainstorm
+notes.txt
